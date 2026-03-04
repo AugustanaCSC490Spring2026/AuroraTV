@@ -29,7 +29,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   String? videoTitle;
   String? videoUrl;
   String? videoId;
-  static const String apiKey = "AIzaSyDplFBfQ-3sBe2nxOXZuS08Jvn7iIgmjxM";
+  static const String apiKey = "AIzaSyDqP2aEOMm_GJPGoHrz8M65KWzz09-jbBk";
   final unescape = HtmlUnescape();
 
   @override
@@ -43,23 +43,31 @@ class _KeyWordPageState extends State<KeyWordPage> {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
-      'maxResults': '1',
+      'maxResults': '5',
       'videoEmbeddable': 'true',
       'key': apiKey,
     });
 
     final res = await http.get(uri);
-
     final data = jsonDecode(res.body);
-    final items = (data['items'] as List).cast<Map<String, dynamic>>();
 
-    final firstItem = items[0];
+    final allItems = data['items'];
 
-    final videoId = firstItem['id']['videoId'] as String;
-    final title = firstItem['snippet']['title'] as String;
-    final videoUrl = "https://www.youtube.com/watch?v=$videoId";
+    for (final item in allItems) {
+      
+      if (item['id'] is! Map<String, dynamic>) continue;
+      if (item['snippet'] is! Map<String, dynamic>) continue;
 
-    return {'videoId': videoId, 'title': title, 'url': videoUrl};
+      final videoId = item['id']['videoId'];
+      final videoTitle = item['snippet']['title'];
+
+      if ((videoId is String && videoId.isNotEmpty) && (videoTitle is String && videoTitle.isNotEmpty)) {
+        final videoUrl = "https://www.youtube.com/watch?v=$videoId";
+        return {'videoId': videoId, 'title': videoTitle, 'url': videoUrl};
+      }
+    }
+
+    return null;
   }
 
   @override
