@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:html_unescape/html_unescape.dart';
 import 'pages/youtube_page.dart';
+import 'config/api_keys.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,7 +30,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   String? videoTitle;
   String? videoUrl;
   String? videoId;
-  static const String apiKey = "AIzaSyClyfTs0mKNdzZy29zfXb0T2f95zuVvEQ8";
+  static const String apiKey = "KEY_HERE";
   final unescape = HtmlUnescape();
 
   @override
@@ -45,7 +46,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
       'type': 'video',
       'maxResults': '5',
       'videoEmbeddable': 'true',
-      'key': apiKey,
+      'key': youtubeApiKey,
     });
 
     final res = await http.get(uri);
