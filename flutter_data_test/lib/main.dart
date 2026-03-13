@@ -95,8 +95,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   String? videoUrl;
   String? videoId;
   bool isLoading = false;
-  static const String apiKey = ApiKeys.youtubeApiKey;
-  
+
   final unescape = HtmlUnescape();
 
   @override
@@ -105,63 +104,45 @@ class _KeyWordPageState extends State<KeyWordPage> {
     super.dispose();
   }
 
-  Future<Map<String, String>?> fetchFirstVideo(String keyword) async {
-  try {
+  Future<List<Map<String, String>>> fetchVideos(String keyword) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
-      'maxResults': '5',
+      'maxResults': '10',
       'videoEmbeddable': 'true',
-      'key': apiKey,
+      'key': youtubeApiKey,
     });
 
     final res = await http.get(uri);
 
-    if (res.statusCode != 200) {
-      return null;
-    }
-
     final data = jsonDecode(res.body);
+    final allItems = data['items'];
 
-    if (data['items'] is! List) {
-      return null;
-    }
-
-    final allItems = data['items'] as List;
+    List<Map<String, String>> videos = [];
 
     for (final item in allItems) {
-      if (item is! Map<String, dynamic>) continue;
       if (item['id'] is! Map<String, dynamic>) continue;
       if (item['snippet'] is! Map<String, dynamic>) continue;
 
-      final idMap = item['id'] as Map<String, dynamic>;
-      final snippetMap = item['snippet'] as Map<String, dynamic>;
+      final videoId = item['id']['videoId'];
+      final videoTitle = item['snippet']['title'];
 
-      final foundVideoId = idMap['videoId'];
-      final foundVideoTitle = snippetMap['title'];
-
-      if (foundVideoId is String &&
-          foundVideoId.isNotEmpty &&
-          foundVideoTitle is String &&
-          foundVideoTitle.isNotEmpty) {
-        final foundVideoUrl =
-            'https://www.youtube.com/watch?v=$foundVideoId';
-
-        return {
-          'videoId': foundVideoId,
-          'title': foundVideoTitle,
-          'url': foundVideoUrl,
-        };
+      if ((videoId is String && videoId.isNotEmpty) &&
+          (videoTitle is String && videoTitle.isNotEmpty)) {
+        final videoUrl = "https://www.youtube.com/watch?v=$videoId";
+        videos.add({
+          'videoId': videoId,
+          'title': unescape.convert(videoTitle),
+          'url': videoUrl,
+        });
       }
     }
 
-    return null;
-  } catch (e) {
-    return null;
+    return videos;
   }
-}
-Future<void> _searchVideo() async {
+
+  Future<void> _searchVideo() async {
   final keyword = keywordCtrl.text.trim();
 
   if (keyword.isEmpty) return;
@@ -170,16 +151,15 @@ Future<void> _searchVideo() async {
     isLoading = true;
   });
 
-  final result = await fetchFirstVideo(keyword);
+  final nav = Navigator.of(context);
+  final result = await fetchVideos(keyword);
 
-  if (!mounted) return;
-
-  if (result == null) {
+  if (result.isEmpty) {
     setState(() {
-      isLoading = false;
       videoTitle = null;
       videoUrl = null;
       videoId = null;
+      isLoading = false;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -190,24 +170,20 @@ Future<void> _searchVideo() async {
     return;
   }
 
-  final id = result['videoId']!;
-  final title = unescape.convert(result['title'] ?? '');
-  final url = result['url']!;
+  final id = result[0]['videoId']!;
+  final title = result[0]['title'] ?? '';
+  final url = result[0]['url']!;
 
   setState(() {
-    isLoading = false;
     videoTitle = title;
     videoUrl = url;
     videoId = id;
+    isLoading = false;
   });
 
-  Navigator.of(context).push(
+  nav.push(
     MaterialPageRoute(
-      builder: (_) => YoutubePage(
-        videoId: id,
-        title: title,
-        url: url,
-      ),
+      builder: (_) => YoutubePage(videos: result),
     ),
   );
 }
@@ -233,11 +209,7 @@ Future<void> _searchVideo() async {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              auroraDeep,
-              auroraNavy,
-              Color(0xFF021C2E),
-            ],
+            colors: [auroraDeep, auroraNavy, Color(0xFF021C2E)],
           ),
         ),
         child: Center(
@@ -298,10 +270,7 @@ Future<void> _searchVideo() async {
                         const SizedBox(height: 8),
                         const Text(
                           "Retro-inspired streaming",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 15,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 15),
                         ),
                         const SizedBox(height: 20),
                         TextField(
