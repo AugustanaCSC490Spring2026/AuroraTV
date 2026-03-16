@@ -1,7 +1,59 @@
 import 'package:flutter/material.dart';
-import 'youtube_page.dart';
+import '../main.dart';
 
-void main() => runApp(const MaterialApp(home: AuthPage()));
+const Color auroraMint = Color(0xFFC5FDD3);
+const Color auroraLight = Color(0xFF94E1B4);
+const Color auroraGreen = Color(0xFF69C5A0);
+const Color auroraTeal = Color(0xFF45A994);
+const Color auroraBlueTeal = Color(0xFF288D8A);
+const Color auroraDeep = Color(0xFF126171);
+const Color auroraNavy = Color(0xFF033854);
+const Color auroraPanel = Color(0xFF08263D);
+const Color auroraGlow = Color(0xFF5EF2D6);
+
+void main() => runApp(
+  MaterialApp(
+    theme: ThemeData(
+      useMaterial3: true,
+      scaffoldBackgroundColor: auroraNavy,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: auroraBlueTeal,
+        brightness: Brightness.dark,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: auroraPanel,
+        hintStyle: const TextStyle(color: Colors.white54),
+        labelStyle: const TextStyle(color: auroraLight),
+        prefixIconColor: auroraGlow,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: auroraDeep, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: auroraGlow, width: 1.8),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: auroraBlueTeal,
+          foregroundColor: auroraMint,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
+    ),
+    home: const AuthPage(),
+  ),
+);
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -14,6 +66,15 @@ class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLogin = true; // State toggle
   bool _isObscured = true;
+  final TextEditingController passwordCtrl = TextEditingController();
+  final TextEditingController confirmPasswordCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    passwordCtrl.dispose();
+    confirmPasswordCtrl.dispose();
+    super.dispose();
+  }
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
@@ -26,17 +87,7 @@ class _AuthPageState extends State<AuthPage> {
       // Navigate to YouTube page after successful validation
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => YoutubePage(
-            videos: [
-              {
-                'videoId': 'dQw4w9WgXcQ', // Example video ID
-                'title': 'Example Video',
-                'url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-              },
-            ],
-          ),
-        ),
+        MaterialPageRoute(builder: (context) => const KeyWordPage()),
       );
     }
   }
@@ -59,6 +110,7 @@ class _AuthPageState extends State<AuthPage> {
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
+                    color: auroraMint,
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -76,8 +128,25 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 const SizedBox(height: 16),
 
+                // Confirm Password (only for sign up)
+                if (!_isLogin)
+                  TextFormField(
+                    controller: confirmPasswordCtrl,
+                    obscureText: _isObscured,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: (val) => val != passwordCtrl.text
+                        ? 'Passwords do not match'
+                        : null,
+                  ),
+                if (!_isLogin) const SizedBox(height: 16),
+
                 // Password
                 TextFormField(
+                  controller: passwordCtrl,
                   obscureText: _isObscured,
                   decoration: InputDecoration(
                     labelText: 'Password',
@@ -91,20 +160,17 @@ class _AuthPageState extends State<AuthPage> {
                           setState(() => _isObscured = !_isObscured),
                     ),
                   ),
+                  validator: (val) => (val == null || val.length < 6)
+                      ? 'Password must be at least 6 characters'
+                      : null,
                 ),
                 const SizedBox(height: 24),
 
                 // Main Action Button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
                   child: ElevatedButton(
                     onPressed: _submit,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                     child: Text(_isLogin ? "LOGIN" : "SIGN UP"),
                   ),
                 ),
@@ -116,7 +182,7 @@ class _AuthPageState extends State<AuthPage> {
                     _isLogin
                         ? "Don't have an account? Sign Up"
                         : "Already have an account? Login",
-                    style: const TextStyle(color: Colors.blueGrey),
+                    style: const TextStyle(color: auroraLight),
                   ),
                 ),
               ],
