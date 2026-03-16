@@ -27,10 +27,14 @@ class _AuthPageState extends State<AuthPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const YoutubePage(
-            videoId: 'dQw4w9WgXcQ', // Example video ID (Rickroll)
-            title: 'Example Video',
-            url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          builder: (context) => YoutubePage(
+            videos: [
+              {
+                'videoId': 'dQw4w9WgXcQ', // Example video ID
+                'title': 'Example Video',
+                'url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+              },
+            ],
           ),
         ),
       );
