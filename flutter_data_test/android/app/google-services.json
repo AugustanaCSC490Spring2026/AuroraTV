@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "387167785790",
+    "project_id": "auroratv-f6555",
+    "storage_bucket": "auroratv-f6555.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387167785790:android:380d633b71138ece6d526f",
+        "android_client_info": {
+          "package_name": "com.example.flutter_data_test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWrSlUhnHb5C5LmA7q_6mvMpEcbvhbddw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

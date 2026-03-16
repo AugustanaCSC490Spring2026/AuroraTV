@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 
 const Color auroraMint = Color(0xFFC5FDD3);
@@ -11,50 +12,6 @@ const Color auroraNavy = Color(0xFF033854);
 const Color auroraPanel = Color(0xFF08263D);
 const Color auroraGlow = Color(0xFF5EF2D6);
 
-void main() => runApp(
-  MaterialApp(
-    theme: ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: auroraNavy,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: auroraBlueTeal,
-        brightness: Brightness.dark,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: auroraPanel,
-        hintStyle: const TextStyle(color: Colors.white54),
-        labelStyle: const TextStyle(color: auroraLight),
-        prefixIconColor: auroraGlow,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: auroraDeep, width: 1.2),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: auroraGlow, width: 1.8),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: auroraBlueTeal,
-          foregroundColor: auroraMint,
-          minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-          ),
-        ),
-      ),
-    ),
-    home: const AuthPage(),
-  ),
-);
-
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -64,32 +21,76 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLogin = true; // State toggle
+  bool _isLogin = true;
   bool _isObscured = true;
+
+  final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController confirmPasswordCtrl = TextEditingController();
 
   @override
   void dispose() {
+    emailCtrl.dispose();
     passwordCtrl.dispose();
     confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      // Logic for Login vs Sign Up
-      final message = _isLogin ? "Logging in..." : "Creating account...";
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      if (_isLogin) {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailCtrl.text.trim(),
+          password: passwordCtrl.text.trim(),
+        );
+      } else {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailCtrl.text.trim(),
+          password: passwordCtrl.text.trim(),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Authentication failed';
+
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No user found for that email.';
+          break;
+        case 'wrong-password':
+          message = 'Wrong password.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address.';
+          break;
+        case 'email-already-in-use':
+          message = 'That email is already in use.';
+          break;
+        case 'weak-password':
+          message = 'Password is too weak.';
+          break;
+        case 'invalid-credential':
+          message = 'Invalid login credentials.';
+          break;
+      }
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      if (!mounted) return;
 
-      // Navigate to YouTube page after successful validation
-      Navigator.push(
+      ScaffoldMessenger.of(
         context,
-        MaterialPageRoute(builder: (context) => const KeyWordPage()),
-      );
+      ).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
     }
+  }
+
+  Future<void> _continueAsGuest() async {
+  await FirebaseAuth.instance.signInAnonymously();
   }
 
   @override
@@ -97,14 +98,12 @@ class _AuthPageState extends State<AuthPage> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          // Prevents keyboard overflow
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated Title
                 Text(
                   _isLogin ? "Welcome Back" : "Create Account",
                   style: const TextStyle(
@@ -114,9 +113,8 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-
-                // Email
                 TextFormField(
+                  controller: emailCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(),
@@ -127,8 +125,6 @@ class _AuthPageState extends State<AuthPage> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-
-                // Confirm Password (only for sign up)
                 if (!_isLogin)
                   TextFormField(
                     controller: confirmPasswordCtrl,
@@ -143,8 +139,6 @@ class _AuthPageState extends State<AuthPage> {
                         : null,
                   ),
                 if (!_isLogin) const SizedBox(height: 16),
-
-                // Password
                 TextFormField(
                   controller: passwordCtrl,
                   obscureText: _isObscured,
@@ -165,8 +159,6 @@ class _AuthPageState extends State<AuthPage> {
                       : null,
                 ),
                 const SizedBox(height: 24),
-
-                // Main Action Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -174,8 +166,14 @@ class _AuthPageState extends State<AuthPage> {
                     child: Text(_isLogin ? "LOGIN" : "SIGN UP"),
                   ),
                 ),
-
-                // The Toggle Button
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _continueAsGuest,
+                    child: const Text("CONTINUE AS GUEST"),
+                  ),
+                ),
                 TextButton(
                   onPressed: () => setState(() => _isLogin = !_isLogin),
                   child: Text(

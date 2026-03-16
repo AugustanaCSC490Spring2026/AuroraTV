@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:html_unescape/html_unescape.dart';
 import 'pages/youtube_page.dart';
+import 'pages/auth_page.dart';
 import 'config/api_keys.dart';
+import 'firebase_options.dart';
 
 const Color auroraMint = Color(0xFFC5FDD3);
 const Color auroraLight = Color(0xFF94E1B4);
@@ -15,7 +19,11 @@ const Color auroraNavy = Color(0xFF033854);
 const Color auroraPanel = Color(0xFF08263D);
 const Color auroraGlow = Color(0xFF5EF2D6);
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -77,7 +85,22 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const KeyWordPage(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (snapshot.hasData) {
+            return const KeyWordPage();
+          }
+
+          return const AuthPage();
+        },
+      ),
     );
   }
 }
@@ -193,7 +216,9 @@ class _KeyWordPageState extends State<KeyWordPage> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: IconButton(
-              onPressed: () {},
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+              },
               icon: const Icon(Icons.account_circle_outlined),
             ),
           ),
