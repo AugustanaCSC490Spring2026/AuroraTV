@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:youtube_player_iframe/youtube_player_iframe.dart'as ypi;
+import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 
 class YoutubePage extends StatefulWidget {
   final String videoId;
@@ -27,7 +26,6 @@ class _YoutubePageState extends State<YoutubePage> {
   void initState() {
     super.initState();
 
-    
     mobileController = ypf.YoutubePlayerController(
       initialVideoId: widget.videoId,
       flags: const ypf.YoutubePlayerFlags(
@@ -66,27 +64,27 @@ class _YoutubePageState extends State<YoutubePage> {
 
   @override
   Widget build(BuildContext context) => ypf.YoutubePlayerBuilder(
-        player: ypf.YoutubePlayer(
-          controller: mobileController,
-          showVideoProgressIndicator: true,
-        ),
-        builder: (context, player) => Scaffold(
-          appBar: AppBar(title: const Text("Now Playing")),
-          body: ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              player,
-              const SizedBox(height: 16),
-              Text(widget.title),
-              const SizedBox(height: 8),
-              Text(widget.url),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: togglePlayPause,
-                child: Text(mobileController.value.isPlaying ? 'Pause' : 'Play'),
-              ),
-            ],
+    player: ypf.YoutubePlayer(
+      controller: mobileController,
+      showVideoProgressIndicator: true,
+    ),
+    builder: (context, player) => Scaffold(
+      appBar: AppBar(title: const Text("Now Playing")),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          player,
+          const SizedBox(height: 16),
+          Text(widget.title),
+          const SizedBox(height: 8),
+          Text(widget.url),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: togglePlayPause,
+            child: Text(mobileController.value.isPlaying ? 'Pause' : 'Play'),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

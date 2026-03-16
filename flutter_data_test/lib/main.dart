@@ -29,7 +29,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   String? videoTitle;
   String? videoUrl;
   String? videoId;
-  static const String apiKey = "AIzaSyDqP2aEOMm_GJPGoHrz8M65KWzz09-jbBk";
+  static const String apiKey = "";
   final unescape = HtmlUnescape();
 
   @override
@@ -54,14 +54,14 @@ class _KeyWordPageState extends State<KeyWordPage> {
     final allItems = data['items'];
 
     for (final item in allItems) {
-      
       if (item['id'] is! Map<String, dynamic>) continue;
       if (item['snippet'] is! Map<String, dynamic>) continue;
 
       final videoId = item['id']['videoId'];
       final videoTitle = item['snippet']['title'];
 
-      if ((videoId is String && videoId.isNotEmpty) && (videoTitle is String && videoTitle.isNotEmpty)) {
+      if ((videoId is String && videoId.isNotEmpty) &&
+          (videoTitle is String && videoTitle.isNotEmpty)) {
         final videoUrl = "https://www.youtube.com/watch?v=$videoId";
         return {'videoId': videoId, 'title': videoTitle, 'url': videoUrl};
       }
