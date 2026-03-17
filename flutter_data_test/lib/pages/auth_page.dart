@@ -125,20 +125,6 @@ class _AuthPageState extends State<AuthPage> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-                if (!_isLogin)
-                  TextFormField(
-                    controller: confirmPasswordCtrl,
-                    obscureText: _isObscured,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm Password',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
-                    validator: (val) => val != passwordCtrl.text
-                        ? 'Passwords do not match'
-                        : null,
-                  ),
-                if (!_isLogin) const SizedBox(height: 16),
                 TextFormField(
                   controller: passwordCtrl,
                   obscureText: _isObscured,
@@ -158,6 +144,20 @@ class _AuthPageState extends State<AuthPage> {
                       ? 'Password must be at least 6 characters'
                       : null,
                 ),
+                if (!_isLogin) const SizedBox(height: 16),
+                if (!_isLogin)
+                  TextFormField(
+                    controller: confirmPasswordCtrl,
+                    obscureText: _isObscured,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: (val) => val != passwordCtrl.text
+                        ? 'Passwords do not match'
+                        : null,
+                  ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -174,6 +174,7 @@ class _AuthPageState extends State<AuthPage> {
                     child: const Text("CONTINUE AS GUEST"),
                   ),
                 ),
+                const SizedBox(height: 6),
                 TextButton(
                   onPressed: () => setState(() => _isLogin = !_isLogin),
                   child: Text(
