@@ -90,7 +90,7 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Future<void> _continueAsGuest() async {
-  await FirebaseAuth.instance.signInAnonymously();
+    await FirebaseAuth.instance.signInAnonymously();
   }
 
   @override
