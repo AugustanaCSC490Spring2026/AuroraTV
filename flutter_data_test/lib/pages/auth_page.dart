@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../main.dart';
 
 const Color auroraMint = Color(0xFFC5FDD3);
 const Color auroraLight = Color(0xFF94E1B4);
@@ -90,7 +89,7 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Future<void> _continueAsGuest() async {
-  await FirebaseAuth.instance.signInAnonymously();
+    await FirebaseAuth.instance.signInAnonymously();
   }
 
   @override
