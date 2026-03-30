@@ -21,9 +21,7 @@ const Color auroraGlow = Color(0xFF5EF2D6);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -169,6 +167,8 @@ class _KeyWordPageState extends State<KeyWordPage> {
     final keyword = keywordCtrl.text.trim();
 
     if (keyword.isEmpty) return;
+
+    debugPrint(keyword);
 
     setState(() {
       isLoading = true;
@@ -325,46 +325,47 @@ class _KeyWordPageState extends State<KeyWordPage> {
                   ),
                   const SizedBox(height: 20),
                   if (videoTitle != null || videoUrl != null)
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF061B2C),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: auroraDeep),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "CURRENT SELECTION",
-                            style: TextStyle(
-                              color: auroraGlow,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                              fontSize: 12,
-                            ),
+                        onTap: _searchVideo,
+                        // ignore: deprecated_member_use
+                        splashColor: auroraGlow.withOpacity(0.2),
+                        // ignore: deprecated_member_use
+                        highlightColor: auroraGlow.withOpacity(0.08),
+                        child: Ink(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF061B2C),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: auroraDeep),
                           ),
-                          const SizedBox(height: 10),
-                          if (videoTitle != null)
-                            Text(
-                              videoTitle!,
-                              style: const TextStyle(
-                                color: auroraMint,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "CURRENT SELECTION",
+                                style: TextStyle(
+                                  color: auroraGlow,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                          if (videoUrl != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              videoUrl!,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ],
+                              const SizedBox(height: 10),
+                              if (videoTitle != null)
+                                Text(
+                                  keywordCtrl.text.trim(),
+                                  style: const TextStyle(
+                                    color: auroraMint,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                 ],
