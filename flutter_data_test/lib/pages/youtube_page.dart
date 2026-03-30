@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
@@ -99,6 +100,15 @@ class _YoutubePageState extends State<YoutubePage> {
     super.dispose();
   }
 
+  final channels = [
+  {"title": "Lo-fi", "keyword": "lofi hip hop radio", "icon": Icons.music_note},
+  {"title": "News", "keyword": "live news", "icon": Icons.public},
+  {"title": "Gaming", "keyword": "live gaming stream", "icon": Icons.sports_esports},
+  {"title": "Nature", "keyword": "nature live cam", "icon": Icons.landscape},
+  {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
+  {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
+];
+
   @override
   Widget build(BuildContext context) {
     Widget player;
@@ -119,7 +129,83 @@ class _YoutubePageState extends State<YoutubePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Now Playing")),
+  appBar: AppBar(title: const Text("Now Playing")),
+
+ drawer: PointerInterceptor(
+  child: Drawer(
+  child: ListView(
+    padding: EdgeInsets.zero,
+    children: [
+      const DrawerHeader(
+        decoration: BoxDecoration(color: Colors.black87),
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: Text(
+            "Channels",
+            style: TextStyle(color: Colors.white, fontSize: 22),
+          ),
+        ),
+      ),
+      ...channels.map((channel) {
+        return ListTile(
+          leading: Icon(channel["icon"] as IconData),
+          title: Text(channel["title"] as String),
+          onTap: () {
+            final keyword = channel["keyword"] as String;
+            Navigator.pop(context);
+            Future.microtask(() {
+              Navigator.of(this.context).pop(keyword);
+            });
+          },
+        );
+      }),
+      const Divider(),
+      ListTile(
+        leading: const Icon(Icons.add),
+        title: const Text("Create Channel"),
+        onTap: () {
+          Navigator.pop(context);
+
+          final controller = TextEditingController();
+
+          showDialog(
+            context: this.context,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: const Text("Create Channel"),
+                content: TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    hintText: "Enter a search term",
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text("Cancel"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final keyword = controller.text.trim();
+                      Navigator.pop(dialogContext);
+                      if (keyword.isNotEmpty) {
+                        Future.microtask(() {
+                          Navigator.of(this.context).pop(keyword);
+                        });
+                      }
+                    },
+                    child: const Text("Open"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    ],
+  ),
+),
+ ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
