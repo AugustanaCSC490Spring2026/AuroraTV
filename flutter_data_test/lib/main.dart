@@ -19,7 +19,6 @@ const Color auroraNavy = Color(0xFF033854);
 const Color auroraPanel = Color(0xFF08263D);
 const Color auroraGlow = Color(0xFF5EF2D6);
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -125,87 +124,100 @@ class _KeyWordPageState extends State<KeyWordPage> {
     keywordCtrl.dispose();
     super.dispose();
   }
+
   Widget buildFeaturedChannels() {
-  final channels = [
-  {"title": "Lo-fi", "keyword": "lofi hip hop radio", "icon": Icons.music_note},
-  {"title": "News", "keyword": "live news", "icon": Icons.public},
-  {"title": "Gaming", "keyword": "live gaming stream", "icon": Icons.sports_esports},
-  {"title": "Nature", "keyword": "nature live cam", "icon": Icons.landscape},
-  {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
-  {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
-];
+    final channels = [
+      {
+        "title": "Lo-fi",
+        "keyword": "lofi hip hop radio",
+        "icon": Icons.music_note,
+      },
+      {"title": "News", "keyword": "live news", "icon": Icons.public},
+      {
+        "title": "Gaming",
+        "keyword": "live gaming stream",
+        "icon": Icons.sports_esports,
+      },
+      {
+        "title": "Nature",
+        "keyword": "nature live cam",
+        "icon": Icons.landscape,
+      },
+      {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
+      {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
+    ];
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        "Start Watching",
-        style: TextStyle(
-          color: auroraMint,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Start Watching",
+          style: TextStyle(
+            color: auroraMint,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      ),
-      const SizedBox(height: 12),
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: channels.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.2,
-        ),
-        itemBuilder: (context, index) {
-          final channel = channels[index];
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: channels.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.2,
+          ),
+          itemBuilder: (context, index) {
+            final channel = channels[index];
 
-          return GestureDetector(
-            onTap: () async {
-              keywordCtrl.text = channel["keyword"] as String;
-              await _searchVideo();
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: auroraPanel,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: auroraDeep),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    channel["icon"] as IconData,
-                    color: auroraGlow,
-                    size: 34,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    channel["title"] as String,
-                    style: const TextStyle(
-                      color: auroraMint,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+            return GestureDetector(
+              onTap: () async {
+                keywordCtrl.text = channel["keyword"] as String;
+                await _searchVideo();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: auroraPanel,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: auroraDeep),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      channel["icon"] as IconData,
+                      color: auroraGlow,
+                      size: 34,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      channel["title"] as String,
+                      style: const TextStyle(
+                        color: auroraMint,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    ],
-  );
-}
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   Future<List<Map<String, String>>> fetchVideos(String keyword) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
-      'maxResults': '10',
+      'maxResults': '20',
       'videoEmbeddable': 'true',
-      'key': ApiKeys.youtubeApiKey,
+      'key': youtubeApiKey,
     });
 
     final res = await http.get(uri);
@@ -232,6 +244,8 @@ class _KeyWordPageState extends State<KeyWordPage> {
         });
       }
     }
+
+    videos.shuffle();
 
     return videos;
   }
@@ -278,13 +292,13 @@ class _KeyWordPageState extends State<KeyWordPage> {
     });
 
     final selectedKeyword = await nav.push<String>(
-  MaterialPageRoute(builder: (_) => YoutubePage(videos: result)),
-);
+      MaterialPageRoute(builder: (_) => YoutubePage(videos: result)),
+    );
 
-if (selectedKeyword != null && selectedKeyword.isNotEmpty) {
-  keywordCtrl.text = selectedKeyword;
-  await _searchVideo();
-}
+    if (selectedKeyword != null && selectedKeyword.isNotEmpty) {
+      keywordCtrl.text = selectedKeyword;
+      await _searchVideo();
+    }
   }
 
   @override
