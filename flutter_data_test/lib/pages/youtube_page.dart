@@ -21,7 +21,6 @@ class _YoutubePageState extends State<YoutubePage> {
   bool handledEndPlay = false;
 
   Map<String, String> get currentVideo => widget.videos[currentIndex];
-  bool get hasNext => currentIndex + 1 < widget.videos.length;
 
   @override
   void initState() {
@@ -138,16 +137,7 @@ class _YoutubePageState extends State<YoutubePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Now Playing"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.skip_next),
-            tooltip: 'Skip to next',
-            onPressed: hasNext ? playNext : null,
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Now Playing")),
 
       drawer: PointerInterceptor(
         child: Drawer(
