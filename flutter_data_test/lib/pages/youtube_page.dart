@@ -137,8 +137,18 @@ class _YoutubePageState extends State<YoutubePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Now Playing")),
-
+      appBar: AppBar(
+        title: const Text("Now Playing"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.skip_next),
+            onPressed: currentIndex + 1 < widget.videos.length
+                ? playNext
+                : null,
+            tooltip: "Skip",
+          ),
+        ],
+      ),
       drawer: PointerInterceptor(
         child: Drawer(
           child: ListView(

@@ -8,6 +8,7 @@ import 'pages/youtube_page.dart';
 import 'pages/auth_page.dart';
 import 'config/api_keys.dart';
 import 'firebase_options.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 const Color auroraMint = Color(0xFFC5FDD3);
 const Color auroraLight = Color(0xFF94E1B4);
@@ -116,8 +117,19 @@ class _KeyWordPageState extends State<KeyWordPage> {
   String? videoUrl;
   String? videoId;
   bool isLoading = false;
+  bool premadeCategory = false;
 
+  late final GenerativeModel model;
   final unescape = HtmlUnescape();
+
+  @override
+  void initState() {
+    super.initState();
+    model = GenerativeModel(
+      model: 'gemini-3-flash-preview',
+      apiKey: geminiApiKey,
+    );
+  }
 
   @override
   void dispose() {
@@ -174,6 +186,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
 
             return GestureDetector(
               onTap: () async {
+                premadeCategory = true;
                 keywordCtrl.text = channel["keyword"] as String;
                 await _searchVideo();
               },
@@ -251,7 +264,9 @@ class _KeyWordPageState extends State<KeyWordPage> {
   }
 
   Future<void> _searchVideo() async {
-    final keyword = keywordCtrl.text.trim();
+    debugPrint(premadeCategory.toString());
+
+    String keyword = keywordCtrl.text.trim();
 
     if (keyword.isEmpty) return;
 
@@ -262,6 +277,12 @@ class _KeyWordPageState extends State<KeyWordPage> {
     });
 
     final nav = Navigator.of(context);
+    
+    if (!premadeCategory) { // do this idk bruh !!!!
+      keyword = await _editText(keyword);
+    }
+    premadeCategory = false;
+
     final result = await fetchVideos(keyword);
 
     if (result.isEmpty) {
@@ -298,6 +319,25 @@ class _KeyWordPageState extends State<KeyWordPage> {
     if (selectedKeyword != null && selectedKeyword.isNotEmpty) {
       keywordCtrl.text = selectedKeyword;
       await _searchVideo();
+    }
+  }
+
+  Future<String> _editText(keyword) async {
+    debugPrint("Gemini used");
+    try {
+      final response = await model.generateContent([
+        Content.text(
+          'Turn this into an optimized YouTube search query. Keep it short, natural, and focused on the main topic. Return only the search query, with no explanation or quotation marks:\n\n$keyword',
+        ),
+      ]);
+
+      final shaped = (response.text ?? '').trim();
+      debugPrint(shaped);
+      if (shaped.isEmpty) return keyword;
+      return shaped;
+    } catch (e) {
+      debugPrint('Gemini error: $e');
+      return keyword;
     }
   }
 
