@@ -3,6 +3,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
@@ -19,6 +20,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
   int currentIndex = 0;
   bool handledEndPlay = false;
+  bool isAccountMenuOpen = false;
 
   Map<String, String> get currentVideo => widget.videos[currentIndex];
 
@@ -137,6 +139,56 @@ class _YoutubePageState extends State<YoutubePage> {
             onPressed: currentIndex + 1 < widget.videos.length ? playNext : null,
             tooltip: "Skip",
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: "Account",
+            color: const Color(0xFF04131F),
+            onOpened: () {
+              setState(() {
+                isAccountMenuOpen = true;
+              });
+            },
+            onCanceled: () {
+              setState(() {
+                isAccountMenuOpen = false;
+              });
+            },
+            onSelected: (value) async {
+              setState(() {
+                isAccountMenuOpen = false;
+              });
+
+              if (value == 'logout') {
+                await FirebaseAuth.instance.signOut();
+                if (!mounted) return;
+                Navigator.of(context, rootNavigator: true)
+                    .popUntil((route) => route.isFirst);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'profile',
+                child: Text(
+                  'Profile',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: Text(
+                  'Settings',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       drawer: PointerInterceptor(
@@ -214,14 +266,24 @@ class _YoutubePageState extends State<YoutubePage> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      body: Stack(
         children: [
-          player,
-          const SizedBox(height: 16),
-          Text(currentVideo['title'] ?? ''),
-          const SizedBox(height: 8),
-          Text(currentVideo['url'] ?? ''),
+          ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              player,
+              const SizedBox(height: 16),
+              Text(currentVideo['title'] ?? ''),
+              const SizedBox(height: 8),
+              Text(currentVideo['url'] ?? ''),
+            ],
+          ),
+          if (isAccountMenuOpen)
+            Positioned.fill(
+              child: PointerInterceptor(
+                child: Container(color: Colors.transparent),
+              ),
+            ),
         ],
       ),
     );
