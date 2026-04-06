@@ -277,8 +277,9 @@ class _KeyWordPageState extends State<KeyWordPage> {
     });
 
     final nav = Navigator.of(context);
-    
-    if (!premadeCategory) { // do this idk bruh !!!!
+
+    if (!premadeCategory) {
+      // do this idk bruh !!!!
       keyword = await _editText(keyword);
     }
     premadeCategory = false;
@@ -345,7 +346,19 @@ class _KeyWordPageState extends State<KeyWordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("AuroraTv"),
+        toolbarHeight: 80,
+        title: SizedBox(
+          height: 60,
+          width: 120,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.center,
+              widthFactor: 0.4,
+              child: Image.asset('assets/images/logo.png'),
+            ),
+          ),
+        ),
+
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),

@@ -19,6 +19,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
   int currentIndex = 0;
   bool handledEndPlay = false;
+  bool isHoveringLogo = false;
 
   Map<String, String> get currentVideo => widget.videos[currentIndex];
 
@@ -101,9 +102,17 @@ class _YoutubePageState extends State<YoutubePage> {
   }
 
   final channels = [
-    {"title": "Lo-fi", "keyword": "lofi hip hop radio", "icon": Icons.music_note},
+    {
+      "title": "Lo-fi",
+      "keyword": "lofi hip hop radio",
+      "icon": Icons.music_note,
+    },
     {"title": "News", "keyword": "live news", "icon": Icons.public},
-    {"title": "Gaming", "keyword": "live gaming stream", "icon": Icons.sports_esports},
+    {
+      "title": "Gaming",
+      "keyword": "live gaming stream",
+      "icon": Icons.sports_esports,
+    },
     {"title": "Nature", "keyword": "nature live cam", "icon": Icons.landscape},
     {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
     {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
@@ -130,11 +139,63 @@ class _YoutubePageState extends State<YoutubePage> {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 120, // 👈 more space for both
+        leading: Row(
+          children: [
+            // ☰ HAMBURGER MENU
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
+            ),
+
+            // 🖼 LOGO
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 6.0),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  onEnter: (_) => setState(() => isHoveringLogo = true),
+                  onExit: (_) => setState(() => isHoveringLogo = false),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      transform: Matrix4.identity()
+                        ..scale(isHoveringLogo ? 1.1 : 1.0),
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5EF2D6),
+                            blurRadius: isHoveringLogo ? 22 : 12,
+                            spreadRadius: isHoveringLogo ? 2 : 0,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
         title: const Text("Now Playing"),
         actions: [
           IconButton(
             icon: const Icon(Icons.skip_next),
-            onPressed: currentIndex + 1 < widget.videos.length ? playNext : null,
+            onPressed: currentIndex + 1 < widget.videos.length
+                ? playNext
+                : null,
             tooltip: "Skip",
           ),
         ],
