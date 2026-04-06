@@ -119,6 +119,13 @@ class _KeyWordPageState extends State<KeyWordPage> {
   bool isLoading = false;
   bool premadeCategory = false;
 
+  bool kidsMode = false;
+  String selectedDuration = 'Any';
+  String selectedVideoType = 'Any';
+
+  final TextEditingController avoidWordsCtrl = TextEditingController();
+  final TextEditingController advancedDescriptionCtrl = TextEditingController();
+
   late final GenerativeModel model;
   final unescape = HtmlUnescape();
 
@@ -134,7 +141,154 @@ class _KeyWordPageState extends State<KeyWordPage> {
   @override
   void dispose() {
     keywordCtrl.dispose();
+    avoidWordsCtrl.dispose();
+    advancedDescriptionCtrl.dispose();
     super.dispose();
+  }
+
+  void _openFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: auroraPanel,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: auroraDeep, width: 1.2),
+              ),
+              title: const Text(
+                'Search Filters',
+                style: TextStyle(
+                  color: auroraMint,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: auroraGlow,
+                        title: const Text(
+                          'Kids Mode',
+                          style: TextStyle(color: auroraMint),
+                        ),
+                        value: kidsMode,
+                        onChanged: (value) {
+                          setDialogState(() => kidsMode = value);
+                          setState(() => kidsMode = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: selectedDuration,
+                        dropdownColor: auroraPanel,
+                        style: const TextStyle(color: auroraMint),
+                        decoration: const InputDecoration(
+                          labelText: 'Video Duration',
+                        ),
+                        items: ['Any', 'Short', 'Medium', 'Long']
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() => selectedDuration = value);
+                            setState(() => selectedDuration = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: selectedVideoType,
+                        dropdownColor: auroraPanel,
+                        style: const TextStyle(color: auroraMint),
+                        decoration: const InputDecoration(
+                          labelText: 'Video Type',
+                        ),
+                        items: ['Any', 'Live', 'Shorts', 'Videos']
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() => selectedVideoType = value);
+                            setState(() => selectedVideoType = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: avoidWordsCtrl,
+                        style: const TextStyle(color: Colors.white),
+                        onChanged: (_) {
+                          setDialogState(() {});
+                          setState(() {});
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Words to Avoid',
+                          hintText: 'e.g. remix, clips, shorts',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: advancedDescriptionCtrl,
+                        style: const TextStyle(color: Colors.white),
+                        onChanged: (_) {
+                          setDialogState(() {});
+                          setState(() {});
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Advanced Description',
+                          hintText: 'Optional extra detail',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      kidsMode = false;
+                      selectedDuration = 'Any';
+                      selectedVideoType = 'Any';
+                      avoidWordsCtrl.clear();
+                      advancedDescriptionCtrl.clear();
+                    });
+                    setState(() {
+                      kidsMode = false;
+                      selectedDuration = 'Any';
+                      selectedVideoType = 'Any';
+                    });
+                  },
+                  child: const Text('Reset'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget buildFeaturedChannels() {
@@ -441,15 +595,78 @@ class _KeyWordPageState extends State<KeyWordPage> {
                           style: TextStyle(color: Colors.white70, fontSize: 15),
                         ),
                         const SizedBox(height: 20),
-                        TextField(
-                          controller: keywordCtrl,
-                          style: const TextStyle(color: Colors.white),
-                          onSubmitted: (_) => _searchVideo(),
-                          decoration: const InputDecoration(
-                            labelText: "Search",
-                            hintText: "e.g. lo-fi beats, synthwave, 80s hits",
-                            prefixIcon: Icon(Icons.search),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: keywordCtrl,
+                                style: const TextStyle(color: Colors.white),
+                                onSubmitted: (_) => _searchVideo(),
+                                decoration: const InputDecoration(
+                                  labelText: "Search",
+                                  hintText:
+                                      "e.g. lo-fi beats, synthwave, 80s hits",
+                                  prefixIcon: Icon(Icons.search),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: auroraPanel,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: auroraDeep,
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: IconButton(
+                                onPressed: _openFilterDialog,
+                                icon: const Icon(Icons.tune),
+                                color: auroraGlow,
+                                tooltip: 'Filters',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (kidsMode)
+                              Chip(
+                                backgroundColor: auroraDeep,
+                                label: const Text(
+                                  'Kids Mode',
+                                  style: TextStyle(color: auroraMint),
+                                ),
+                              ),
+                            if (selectedDuration != 'Any')
+                              Chip(
+                                backgroundColor: auroraDeep,
+                                label: Text(
+                                  selectedDuration,
+                                  style: const TextStyle(color: auroraMint),
+                                ),
+                              ),
+                            if (selectedVideoType != 'Any')
+                              Chip(
+                                backgroundColor: auroraDeep,
+                                label: Text(
+                                  selectedVideoType,
+                                  style: const TextStyle(color: auroraMint),
+                                ),
+                              ),
+                            if (avoidWordsCtrl.text.trim().isNotEmpty)
+                              Chip(
+                                backgroundColor: auroraDeep,
+                                label: Text(
+                                  'Avoid: ${avoidWordsCtrl.text.trim()}',
+                                  style: const TextStyle(color: auroraMint),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
