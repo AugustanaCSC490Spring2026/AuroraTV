@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
+import '../models/frame_options.dart';
+
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
 
@@ -19,7 +21,8 @@ class _YoutubePageState extends State<YoutubePage> {
 
   int currentIndex = 0;
   bool handledEndPlay = false;
-
+  bool isHoveringLogo = false;
+  DisplayMode selectedMode = DisplayMode.normal;
   Map<String, String> get currentVideo => widget.videos[currentIndex];
 
   @override
@@ -82,6 +85,43 @@ class _YoutubePageState extends State<YoutubePage> {
     }
   }
 
+  Widget buildVideoPlayer(Widget player) {
+  return Center(
+    child: AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                42, // left
+                28, // top
+                42, // right
+                32, // bottom
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: player,
+              ),
+            ),
+          ),
+
+          if (selectedMode == DisplayMode.retroTv)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Image.asset(
+                  frameAssetMap[DisplayMode.retroTv]!,
+                  fit: BoxFit.fill,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
   @override
   void deactivate() {
     if (!kIsWeb) {
@@ -138,6 +178,56 @@ class _YoutubePageState extends State<YoutubePage> {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 120, // 👈 more space for both
+        leading: Row(
+          children: [
+            // ☰ HAMBURGER MENU
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
+            ),
+
+            // 🖼 LOGO
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 6.0),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  onEnter: (_) => setState(() => isHoveringLogo = true),
+                  onExit: (_) => setState(() => isHoveringLogo = false),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      transform: Matrix4.identity()
+                        ..scale(isHoveringLogo ? 1.1 : 1.0),
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5EF2D6),
+                            blurRadius: isHoveringLogo ? 22 : 12,
+                            spreadRadius: isHoveringLogo ? 2 : 0,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
         title: const Text("Now Playing"),
         actions: [
           IconButton(
@@ -227,7 +317,34 @@ class _YoutubePageState extends State<YoutubePage> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          player,
+          buildVideoPlayer(player),
+          const SizedBox(height: 12),
+          const Text(
+            'Display Mode',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+
+          RadioListTile<DisplayMode>(
+            title: const Text('Normal'),
+            value: DisplayMode.normal,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              setState(() {
+                selectedMode = value!;
+              });
+            },
+          ),
+
+          RadioListTile<DisplayMode>(
+            title: const Text('Retro TV'),
+            value: DisplayMode.retroTv,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              setState(() {
+                selectedMode = value!;
+              });
+            },
+          ),
           const SizedBox(height: 16),
           Text(currentVideo['title'] ?? ''),
           const SizedBox(height: 8),
