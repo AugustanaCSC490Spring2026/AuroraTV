@@ -22,7 +22,6 @@ class _YoutubePageState extends State<YoutubePage> {
   int currentIndex = 0;
   bool handledEndPlay = false;
   bool isAccountMenuOpen = false;
-  bool isHoveringLogo = false;
   DisplayMode selectedMode = DisplayMode.normal;
 
   Map<String, String> get currentVideo => widget.videos[currentIndex];
@@ -197,25 +196,13 @@ class _YoutubePageState extends State<YoutubePage> {
                 padding: const EdgeInsets.only(right: 6.0),
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
-                  onEnter: (_) => setState(() => isHoveringLogo = true),
-                  onExit: (_) => setState(() => isHoveringLogo = false),
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                    child: Container(
                       transform: Matrix4.identity()
-                        ..scale(isHoveringLogo ? 1.1 : 1.0),
-                      decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF5EF2D6),
-                            blurRadius: isHoveringLogo ? 22 : 12,
-                            spreadRadius: isHoveringLogo ? 2 : 0,
-                          ),
-                        ],
-                      ),
+                        ..scale(1.1), // always slightly bigger
                       child: Image.asset(
                         'assets/images/logo.png',
                         fit: BoxFit.contain,
@@ -286,14 +273,32 @@ class _YoutubePageState extends State<YoutubePage> {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(color: Colors.black87),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    "Channels",
-                    style: TextStyle(color: Colors.white, fontSize: 22),
-                  ),
+              DrawerHeader(
+                decoration: const BoxDecoration(color: Colors.black87),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.home, color: Colors.white),
+                      title: const Text(
+                        "Home",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Channels",
+                      style: TextStyle(color: Colors.white, fontSize: 22),
+                    ),
+                  ],
                 ),
               ),
               ...channels.map((channel) {
