@@ -84,7 +84,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
     final nav = Navigator.of(context);
 
     if (!premadeCategory) {
-      keyword = await _geminiService.optimizeSearchQuery(keyword);
+      keyword = await _geminiService.optimizeSearchQuery(keyword, avoidWordsCtrl.text.trim(), advancedDescriptionCtrl.text.trim());
     }
     premadeCategory = false;
 

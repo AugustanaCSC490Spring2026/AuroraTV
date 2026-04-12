@@ -18,12 +18,24 @@ class GeminiService {
     );
   }
 
-  Future<String> optimizeSearchQuery(String keyword) async {
+  Future<String> optimizeSearchQuery(String keyword, String avoidWords, String advancedDescription) async {
     debugPrint("Gemini used");
+
+    if (avoidWords.isNotEmpty) {
+      avoidWords = 'Words to avoid: $avoidWords';
+    } else {
+      avoidWords = 'Words to avoid: none';
+    }
+    if (advancedDescription.isNotEmpty) {
+      advancedDescription = 'Extra context: $advancedDescription';
+    } else {
+      advancedDescription = 'Extra context: none';
+    }
+
     try {
       final response = await model.generateContent([
         Content.text(
-          'Turn this into an optimized YouTube search query. Keep it short, natural, and focused on the main topic. Return only the search query, with no explanation or quotation marks:\n\n$keyword',
+          'Turn this into an optimized YouTube search query. Keep it short, natural, and focused on the main topic. Return only the search query, with no explanation or quotation marks:\n\n$keyword\n$avoidWords\n$advancedDescription',
         ),
       ]);
 
