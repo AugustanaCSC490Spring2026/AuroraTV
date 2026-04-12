@@ -24,7 +24,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   bool premadeCategory = false;
 
   bool kidsMode = false;
-  String selectedDuration = 'Any';
+  String selectedDuration = 'any';
   String selectedVideoType = 'Any';
 
   final TextEditingController avoidWordsCtrl = TextEditingController();
@@ -60,7 +60,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
         onReset: () {
           setState(() {
             kidsMode = false;
-            selectedDuration = 'Any';
+            selectedDuration = 'any';
             selectedVideoType = 'Any';
           });
         },
@@ -88,7 +88,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
     }
     premadeCategory = false;
 
-    final result = await _videoService.fetchVideos(keyword);
+    final result = await _videoService.fetchVideos(keyword, kidsMode: kidsMode, selectedDuration: selectedDuration);
 
     if (result.isEmpty) {
       setState(() {
@@ -272,7 +272,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
                                   style: TextStyle(color: auroraMint),
                                 ),
                               ),
-                            if (selectedDuration != 'Any')
+                            if (selectedDuration != 'any')
                               Chip(
                                 backgroundColor: auroraDeep,
                                 label: Text(

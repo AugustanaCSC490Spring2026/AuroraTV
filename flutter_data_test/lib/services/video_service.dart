@@ -14,13 +14,15 @@ class VideoService {
 
   VideoService._internal();
 
-  Future<List<Map<String, String>>> fetchVideos(String keyword) async {
+  Future<List<Map<String, String>>> fetchVideos(String keyword, {bool kidsMode = false, String selectedDuration = 'any'}) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
       'maxResults': '20',
       'videoEmbeddable': 'true',
+      'safeSearch': kidsMode ? 'strict' : 'moderate',
+      'videoDuration': selectedDuration,
       'key': youtubeApiKey,
     });
 
