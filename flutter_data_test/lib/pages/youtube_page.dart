@@ -5,30 +5,47 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/frame_options.dart';
+import '../services/video_service.dart';
+import '../models/search_options.dart';
+import '../services/gemini_service.dart';
 
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
+  final SearchOptions searchOptions;
 
-  const YoutubePage({super.key, required this.videos});
+  const YoutubePage({
+    super.key,
+    required this.videos,
+    required this.searchOptions,
+  });
 
   @override
   State<YoutubePage> createState() => _YoutubePageState();
 }
 
 class _YoutubePageState extends State<YoutubePage> {
+  late List<Map<String, String>> videos;
+  late SearchOptions searchOptions;
   late ypf.YoutubePlayerController mobileController;
   late ypi.YoutubePlayerController webController;
+
+  final _videoService = VideoService();
+  final _geminiService = GeminiService();
 
   int currentIndex = 0;
   bool handledEndPlay = false;
   bool isAccountMenuOpen = false;
+  bool isLoadingMore = false;
   DisplayMode selectedMode = DisplayMode.normal;
 
-  Map<String, String> get currentVideo => widget.videos[currentIndex];
+  Map<String, String> get currentVideo => videos[currentIndex];
 
   @override
   void initState() {
     super.initState();
+
+    videos = List.from(widget.videos);
+    searchOptions = widget.searchOptions;
 
     if (kIsWeb) {
       webController = ypi.YoutubePlayerController.fromVideoId(
@@ -72,8 +89,37 @@ class _YoutubePageState extends State<YoutubePage> {
     }
   }
 
-  void playNext() {
-    if (currentIndex + 1 >= widget.videos.length) return;
+  Future<void> loadMoreVideos() async {
+    if (isLoadingMore) return;
+    isLoadingMore = true;
+
+    String query = await _geminiService.optimizeSearchQuery(
+      searchOptions.keyword,
+      searchOptions.avoidWords,
+      searchOptions.advancedDescription,
+    );
+
+    final moreVideos = await _videoService.fetchVideos(
+      query,
+      kidsMode: searchOptions.kidsMode,
+      selectedDuration: searchOptions.selectedDuration,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      videos.addAll(moreVideos);
+    });
+
+    isLoadingMore = false;
+  }
+
+  void playNext() async {
+    if (currentIndex >= videos.length - 2) {
+      debugPrint("loading more videos");
+      await loadMoreVideos();
+    }
+    if (currentIndex + 1 >= videos.length) return;
     setState(() {
       currentIndex++;
       handledEndPlay = false;
@@ -218,9 +264,7 @@ class _YoutubePageState extends State<YoutubePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.skip_next),
-            onPressed: currentIndex + 1 < widget.videos.length
-                ? playNext
-                : null,
+            onPressed: currentIndex + 1 < videos.length ? playNext : null,
             tooltip: "Skip",
           ),
           PopupMenuButton<String>(
