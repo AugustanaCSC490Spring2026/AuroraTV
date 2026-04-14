@@ -35,7 +35,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
   void initState() {
     super.initState();
     _kidsMode = widget.kidsMode;
-    _selectedDuration = widget.selectedDuration;
+    _selectedDuration = widget.selectedDuration.toLowerCase();
     _selectedVideoType = widget.selectedVideoType;
   }
 
@@ -76,7 +76,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                 dropdownColor: auroraPanel,
                 style: const TextStyle(color: auroraMint),
                 decoration: const InputDecoration(labelText: 'Video Duration'),
-                items: ['Any', 'Short', 'Medium', 'Long']
+                items: ['any', 'short', 'medium', 'long']
                     .map(
                       (value) =>
                           DropdownMenuItem(value: value, child: Text(value)),
@@ -133,7 +133,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
           onPressed: () {
             setState(() {
               _kidsMode = false;
-              _selectedDuration = 'Any';
+              _selectedDuration = 'any';
               _selectedVideoType = 'Any';
               widget.avoidWordsCtrl.clear();
               widget.advancedDescriptionCtrl.clear();

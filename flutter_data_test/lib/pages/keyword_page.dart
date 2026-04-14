@@ -8,6 +8,7 @@ import '../services/video_service.dart';
 import '../services/gemini_service.dart';
 import '../widgets/featured_channels_widget.dart';
 import '../widgets/filter_dialog_widget.dart';
+import '../models/search_options.dart';
 
 class KeyWordPage extends StatefulWidget {
   const KeyWordPage({super.key});
@@ -25,7 +26,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   bool premadeCategory = false;
 
   bool kidsMode = false;
-  String selectedDuration = 'Any';
+  String selectedDuration = 'any';
   String selectedVideoType = 'Any';
 
   final TextEditingController avoidWordsCtrl = TextEditingController();
@@ -61,7 +62,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
         onReset: () {
           setState(() {
             kidsMode = false;
-            selectedDuration = 'Any';
+            selectedDuration = 'any';
             selectedVideoType = 'Any';
           });
         },
@@ -85,11 +86,19 @@ class _KeyWordPageState extends State<KeyWordPage> {
     final nav = Navigator.of(context);
 
     if (!premadeCategory) {
-      keyword = await _geminiService.optimizeSearchQuery(keyword);
+      keyword = await _geminiService.optimizeSearchQuery(
+        keyword,
+        avoidWordsCtrl.text.trim(),
+        advancedDescriptionCtrl.text.trim(),
+      );
     }
     premadeCategory = false;
 
-    final result = await _videoService.fetchVideos(keyword);
+    final result = await _videoService.fetchVideos(
+      keyword,
+      kidsMode: kidsMode,
+      selectedDuration: selectedDuration,
+    );
 
     if (result.isEmpty) {
       setState(() {
@@ -119,7 +128,18 @@ class _KeyWordPageState extends State<KeyWordPage> {
     });
 
     final selectedKeyword = await nav.push<String>(
-      MaterialPageRoute(builder: (_) => YoutubePage(videos: result)),
+      MaterialPageRoute(
+        builder: (_) => YoutubePage(
+          videos: result,
+          searchOptions: SearchOptions(
+            keyword: keywordCtrl.text.trim(),
+            kidsMode: kidsMode,
+            selectedDuration: selectedDuration,
+            avoidWords: avoidWordsCtrl.text.trim(),
+            advancedDescription: advancedDescriptionCtrl.text.trim(),
+          ),
+        ),
+      ),
     );
 
     if (selectedKeyword != null && selectedKeyword.isNotEmpty) {
@@ -273,7 +293,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
                                   style: TextStyle(color: auroraMint),
                                 ),
                               ),
-                            if (selectedDuration != 'Any')
+                            if (selectedDuration != 'any')
                               Chip(
                                 backgroundColor: auroraDeep,
                                 label: Text(
