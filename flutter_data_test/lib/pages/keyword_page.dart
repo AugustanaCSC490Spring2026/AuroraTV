@@ -1,13 +1,13 @@
-// Keyword search page for video discovery
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'youtube_page.dart';
 import '../constants/colors.dart';
 import '../services/video_service.dart';
 import '../services/gemini_service.dart';
+import '../services/category_service.dart';
+import '../models/search_options.dart';
 import '../widgets/featured_channels_widget.dart';
 import '../widgets/filter_dialog_widget.dart';
-import '../models/search_options.dart';
 
 class KeyWordPage extends StatefulWidget {
   const KeyWordPage({super.key});
@@ -49,6 +49,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
         kidsMode: kidsMode,
         selectedDuration: selectedDuration,
         selectedVideoType: selectedVideoType,
+        keyword: keywordCtrl.text.trim(),
         avoidWordsCtrl: avoidWordsCtrl,
         advancedDescriptionCtrl: advancedDescriptionCtrl,
         onApply: (kids, duration, type) {
@@ -65,6 +66,110 @@ class _KeyWordPageState extends State<KeyWordPage> {
             selectedVideoType = 'Any';
           });
         },
+      ),
+    );
+  }
+
+  // ── NEW: Import a shared category by code ──
+  void _openImportDialog() {
+    final codeCtrl = TextEditingController();
+    bool isImporting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: auroraPanel,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: auroraDeep, width: 1.2),
+          ),
+          title: const Text(
+            'Import Category',
+            style: TextStyle(color: auroraMint, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Enter a share code to load another user\'s filters.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: codeCtrl,
+                style: const TextStyle(
+                  color: Colors.white,
+                  letterSpacing: 3,
+                  fontSize: 18,
+                ),
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Share Code',
+                  hintText: 'e.g. LF7-X2K',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            if (isImporting)
+              const Padding(
+                padding: EdgeInsets.all(10),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              ElevatedButton(
+                onPressed: () async {
+                  if (codeCtrl.text.trim().isEmpty) return;
+                  setDialogState(() => isImporting = true);
+
+                  final data = await CategoryService()
+                      .loadCategoryByCode(codeCtrl.text);
+
+                  if (!ctx.mounted) return;
+
+                  if (data == null) {
+                    setDialogState(() => isImporting = false);
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Code not found. Double-check and try again.'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // Apply loaded filters to the page
+                  setState(() {
+                    kidsMode = data['kidsMode'] ?? false;
+                    selectedDuration = data['duration'] ?? 'any';
+                    selectedVideoType = data['videoType'] ?? 'Any';
+                    avoidWordsCtrl.text = data['avoidWords'] ?? '';
+                    advancedDescriptionCtrl.text =
+                        data['advancedDescription'] ?? '';
+                    if ((data['keyword'] as String? ?? '').isNotEmpty) {
+                      keywordCtrl.text = data['keyword'];
+                    }
+                  });
+
+                  Navigator.pop(ctx);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Loaded: ${data['name']}')),
+                  );
+                },
+                child: const Text('Import'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -107,6 +212,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
         isLoading = false;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No embeddable video found. Try another search.'),
@@ -126,17 +232,20 @@ class _KeyWordPageState extends State<KeyWordPage> {
       isLoading = false;
     });
 
+    final searchOptions = SearchOptions(
+      keyword: keyword,
+      kidsMode: kidsMode,
+      selectedDuration: selectedDuration,
+      avoidWords: avoidWordsCtrl.text.trim(),
+      advancedDescription: advancedDescriptionCtrl.text.trim(),
+    );
+
+    if (!mounted) return;
     final selectedKeyword = await nav.push<String>(
       MaterialPageRoute(
         builder: (_) => YoutubePage(
           videos: result,
-          searchOptions: SearchOptions(
-            keyword: keywordCtrl.text.trim(),
-            kidsMode: kidsMode,
-            selectedDuration: selectedDuration,
-            avoidWords: avoidWordsCtrl.text.trim(),
-            advancedDescription: advancedDescriptionCtrl.text.trim(),
-          ),
+          searchOptions: searchOptions,
         ),
       ),
     );
@@ -191,6 +300,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
               constraints: const BoxConstraints(maxWidth: 760),
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: auroraPanel.withOpacity(0.94),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(color: auroraDeep, width: 1.5),
@@ -261,6 +371,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
                               ),
                             ),
                             const SizedBox(width: 12),
+                            // Filter button
                             Container(
                               decoration: BoxDecoration(
                                 color: auroraPanel,
@@ -275,6 +386,24 @@ class _KeyWordPageState extends State<KeyWordPage> {
                                 icon: const Icon(Icons.tune),
                                 color: auroraGlow,
                                 tooltip: 'Filters',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // ── NEW: Import button ──
+                            Container(
+                              decoration: BoxDecoration(
+                                color: auroraPanel,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: auroraDeep,
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: IconButton(
+                                onPressed: _openImportDialog,
+                                icon: const Icon(Icons.download_rounded),
+                                color: auroraMint,
+                                tooltip: 'Import Category',
                               ),
                             ),
                           ],
