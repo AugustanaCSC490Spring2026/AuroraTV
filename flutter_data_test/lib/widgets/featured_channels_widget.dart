@@ -37,6 +37,7 @@ class FeaturedChannelsWidget extends StatelessWidget {
           "Start Watching",
           style: TextStyle(
             color: auroraMint,
+            fontFamily: 'AuroraFont',
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),

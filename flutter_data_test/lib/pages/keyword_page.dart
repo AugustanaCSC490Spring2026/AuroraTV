@@ -256,274 +256,317 @@ class _KeyWordPageState extends State<KeyWordPage> {
     }
   }
 
+  Widget _buildTunerPanel() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: auroraPanel,
+      border: Border.all(color: auroraDeep, width: 1.3),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'CHANNEL CUSTOMIZER',
+          style: TextStyle(
+            color: auroraGlow,
+            fontSize: 12,
+            letterSpacing: 2,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Tune into your own curated channel',
+          style: TextStyle(
+            color: auroraMint,
+            fontFamily: 'AuroraFont',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Search by mood, genre, topic, or vibe',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: keywordCtrl,
+                style: const TextStyle(color: Colors.white),
+                onSubmitted: (_) => _searchVideo(),
+                decoration: const InputDecoration(
+                  labelText: "Search Broadcast",
+                  hintText: "e.g. late night jazz, city pop, gaming live",
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _buildSquareIconButton(
+              onTap: _openFilterDialog,
+              icon: Icons.tune,
+              color: auroraGlow,
+              tooltip: 'Filters',
+            ),
+            const SizedBox(width: 8),
+            _buildSquareIconButton(
+              onTap: _openImportDialog,
+              icon: Icons.download_rounded,
+              color: auroraMint,
+              tooltip: 'Import Category',
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (kidsMode) _buildFilterChip('Kids Mode'),
+            if (selectedDuration != 'any') _buildFilterChip(selectedDuration),
+            if (selectedVideoType != 'Any')
+              _buildFilterChip(selectedVideoType),
+            if (avoidWordsCtrl.text.trim().isNotEmpty)
+              _buildFilterChip('Avoid: ${avoidWordsCtrl.text.trim()}'),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: isLoading ? null : _searchVideo,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.play_circle_fill_rounded),
+            label: Text(isLoading ? 'Scanning Signal...' : 'Launch Channel'),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildCurrentSelectionCard() {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(0), 
+      onTap: _searchVideo,
+      splashColor: auroraGlow.withOpacity(0.1),
+      highlightColor: auroraGlow.withOpacity(0.04),
+      child: Container(
+        width: double.infinity, 
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+        decoration: BoxDecoration(
+          color: const Color(0xFF04131F),
+          border: Border.all(color: auroraDeep, width: 1.4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // TOP LABEL ROW
+            Row(
+              children: [
+                const Text(
+                  'NOW AIRING',
+                  style: TextStyle(
+                    color: auroraGlow,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // LIVE TAG
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'LIVE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // MAIN TITLE (BIG)
+            Text(
+              keywordCtrl.text.trim().isEmpty
+                  ? 'No channel selected'
+                  : keywordCtrl.text.trim(),
+              style: const TextStyle(
+                color: auroraMint,
+                fontFamily: 'AuroraFont',
+                fontSize: 28, 
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // SUBTEXT
+            const Text(
+              'Tap to relaunch this channel',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildSquareIconButton({
+  required VoidCallback onTap,
+  required IconData icon,
+  required Color color,
+  required String tooltip,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      color: const Color(0xFF0A2538),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: auroraDeep, width: 1.2),
+    ),
+    child: IconButton(
+      onPressed: onTap,
+      icon: Icon(icon),
+      color: color,
+      tooltip: tooltip,
+    ),
+  );
+}
+
+Widget _buildFilterChip(String label) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: auroraDeep,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: auroraBlueTeal, width: 1),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(
+        color: auroraMint,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 80,
-        title: SizedBox(
-          height: 60,
-          width: 120,
-          child: ClipRect(
-            child: Align(
-              alignment: Alignment.center,
-              widthFactor: 0.4,
-              child: Image.asset('assets/images/logo.png'),
-            ),
+  toolbarHeight: 70,
+  title: const SizedBox(),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: IconButton(
+        onPressed: () async {
+          await FirebaseAuth.instance.signOut();
+        },
+        icon: const Icon(Icons.account_circle_outlined),
+      ),
+    ),
+  ],
+),
+      body: Container(
+  width: double.infinity,
+  color: auroraNavy,
+  child: SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          
+          Center(
+  child: Padding(
+    padding: const EdgeInsets.only(top: 10, bottom: 20),
+    child: SizedBox(
+  height: 120,
+  child: ClipRect(
+    child: Align(
+      alignment: Alignment.center,
+      heightFactor: 0.5, 
+      child: Image.asset(
+        'assets/images/logo.png',
+        fit: BoxFit.cover,
+      ),
+    ),
+  ),
+),
+  ),
+),
+
+        
+
+          const SizedBox(height: 18),
+  if (videoTitle != null || videoUrl != null) _buildCurrentSelectionCard(),
+
+  const SizedBox(height: 18),
+
+  _buildTunerPanel(),
+
+  const SizedBox(height: 22),
+
+
+          FeaturedChannelsWidget(
+            onChannelTap: (keyword) async {
+              premadeCategory = true;
+              keywordCtrl.text = keyword;
+              await _searchVideo();
+            },
           ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-              },
-              icon: const Icon(Icons.account_circle_outlined),
-            ),
-          ),
+
+          const SizedBox(height: 22),
         ],
       ),
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [auroraDeep, auroraNavy, const Color(0xFF021C2E)],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 760),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: auroraPanel.withOpacity(0.94),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: auroraDeep, width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x66000000),
-                    blurRadius: 24,
-                    offset: Offset(0, 10),
-                  ),
-                  BoxShadow(
-                    color: Color(0x33288D8A),
-                    blurRadius: 32,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    "A U R O R A   T V",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: auroraGlow,
-                      fontSize: 18,
-                      letterSpacing: 5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF04131F),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: auroraDeep, width: 1.4),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Search a channel or video",
-                          style: TextStyle(
-                            color: auroraMint,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Retro-inspired streaming",
-                          style: TextStyle(color: Colors.white70, fontSize: 15),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: keywordCtrl,
-                                style: const TextStyle(color: Colors.white),
-                                onSubmitted: (_) => _searchVideo(),
-                                decoration: const InputDecoration(
-                                  labelText: "Search",
-                                  hintText:
-                                      "e.g. lo-fi beats, synthwave, 80s hits",
-                                  prefixIcon: Icon(Icons.search),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Filter button
-                            Container(
-                              decoration: BoxDecoration(
-                                color: auroraPanel,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: auroraDeep,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: IconButton(
-                                onPressed: _openFilterDialog,
-                                icon: const Icon(Icons.tune),
-                                color: auroraGlow,
-                                tooltip: 'Filters',
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // ── NEW: Import button ──
-                            Container(
-                              decoration: BoxDecoration(
-                                color: auroraPanel,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: auroraDeep,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: IconButton(
-                                onPressed: _openImportDialog,
-                                icon: const Icon(Icons.download_rounded),
-                                color: auroraMint,
-                                tooltip: 'Import Category',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (kidsMode)
-                              Chip(
-                                backgroundColor: auroraDeep,
-                                label: const Text(
-                                  'Kids Mode',
-                                  style: TextStyle(color: auroraMint),
-                                ),
-                              ),
-                            if (selectedDuration != 'any')
-                              Chip(
-                                backgroundColor: auroraDeep,
-                                label: Text(
-                                  selectedDuration,
-                                  style: const TextStyle(color: auroraMint),
-                                ),
-                              ),
-                            if (selectedVideoType != 'Any')
-                              Chip(
-                                backgroundColor: auroraDeep,
-                                label: Text(
-                                  selectedVideoType,
-                                  style: const TextStyle(color: auroraMint),
-                                ),
-                              ),
-                            if (avoidWordsCtrl.text.trim().isNotEmpty)
-                              Chip(
-                                backgroundColor: auroraDeep,
-                                label: Text(
-                                  'Avoid: ${avoidWordsCtrl.text.trim()}',
-                                  style: const TextStyle(color: auroraMint),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: isLoading ? null : _searchVideo,
-                          icon: isLoading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.play_circle_fill_rounded),
-                          label: Text(
-                            isLoading ? "Loading..." : "Launch Channel",
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  FeaturedChannelsWidget(
-                    onChannelTap: (keyword) async {
-                      premadeCategory = true;
-                      keywordCtrl.text = keyword;
-                      await _searchVideo();
-                    },
-                  ),
-                  if (videoTitle != null || videoUrl != null)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _searchVideo,
-                        // ignore: deprecated_member_use
-                        splashColor: auroraGlow.withOpacity(0.2),
-                        // ignore: deprecated_member_use
-                        highlightColor: auroraGlow.withOpacity(0.08),
-                        child: Ink(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF061B2C),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: auroraDeep),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "CURRENT SELECTION",
-                                style: TextStyle(
-                                  color: auroraGlow,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.2,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              if (videoTitle != null)
-                                Text(
-                                  keywordCtrl.text.trim(),
-                                  style: const TextStyle(
-                                    color: auroraMint,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    ),
+  ),
+),
     );
   }
 }
