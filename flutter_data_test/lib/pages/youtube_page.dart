@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_data_test/constants/colors.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
@@ -34,6 +35,7 @@ class _YoutubePageState extends State<YoutubePage> {
   final _geminiService = GeminiService();
 
   int currentIndex = 0;
+  int currentChannelIndex = 0;
   int volume = 50;
   bool handledEndPlay = false;
   bool isAccountMenuOpen = false;
@@ -128,6 +130,41 @@ class _YoutubePageState extends State<YoutubePage> {
     }
   }
 
+  Future<void> switchChannel() async {
+    final nextIndex = (currentChannelIndex + 1) % channels.length;
+    final keyword = channels[nextIndex]["keyword"];
+
+    if (keyword == null) return;
+
+    try {
+      final newVideos = await _videoService.fetchVideos(
+        keyword as String,
+        kidsMode: searchOptions.kidsMode,
+        selectedDuration: searchOptions.selectedDuration,
+      );
+
+      if (!mounted || newVideos.isEmpty) return;
+
+      final newVideoId = newVideos[0]['videoId'];
+      if (newVideoId == null) return;
+
+      setState(() {
+        currentChannelIndex = nextIndex;
+        videos = newVideos;
+        currentIndex = 0;
+        handledEndPlay = false;
+      });
+
+      if (kIsWeb) {
+        webController.loadVideoById(videoId: newVideoId);
+      } else {
+        mobileController.load(newVideoId);
+      }
+    } catch (e) {
+      debugPrint("Channel switch error: $e");
+    }
+  }
+
   void playNext() async {
     if (currentIndex >= videos.length - 2) {
       debugPrint("loading more videos");
@@ -197,10 +234,42 @@ class _YoutubePageState extends State<YoutubePage> {
                           right: frameWidth * 0.035,
                           top: frameHeight * 0.49,
                           child: PointerInterceptor(
-                            child: VolumeKnob(
-                              volume: volume,
-                              onChanged: changeVolume,
-                              size: frameWidth * 0.075,
+                            child: Column(
+                              children: [
+                                VolumeKnob(
+                                  volume: volume,
+                                  onChanged: changeVolume,
+                                  size: frameWidth * 0.075,
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'VOL',
+                                  style: TextStyle(
+                                    color: const Color(0xFFD8B56D),
+                                    fontFamily: 'AuroraFont',
+                                    fontSize: frameWidth * 0.018,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 2),
+
+                                ChannelKnob(
+                                  channelIndex: currentChannelIndex,
+                                  onPressed: switchChannel,
+                                  size: frameWidth * 0.075,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'CH',
+                                  style: TextStyle(
+                                    color: const Color(0xFFD8B56D),
+                                    fontFamily: 'AuroraFont',
+                                    fontSize: frameWidth * 0.018,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -287,7 +356,7 @@ class _YoutubePageState extends State<YoutubePage> {
                     },
                     child: Container(
                       transform: Matrix4.identity()
-                        ..scale(1.1), // always slightly bigger
+                        ..scale(1.1), 
                       child: Image.asset(
                         'assets/images/logo.png',
                         fit: BoxFit.contain,
@@ -299,7 +368,18 @@ class _YoutubePageState extends State<YoutubePage> {
             ),
           ],
         ),
-        title: const Text("Now Playing"),
+        title: Padding(
+  padding: const EdgeInsets.only(top: 8), // 👈 adjust this
+  child: const Text(
+    "Now Playing",
+    style: TextStyle(
+      color: auroraMint,
+      fontFamily: 'AuroraFont',
+      fontSize: 25,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
         actions: [
           IconButton(
             icon: const Icon(Icons.skip_next),
@@ -453,7 +533,7 @@ class _YoutubePageState extends State<YoutubePage> {
               const SizedBox(height: 12),
               const Text(
                 'Display Mode',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontFamily: 'AuroraFont', fontWeight: FontWeight.bold),
               ),
               RadioListTile<DisplayMode>(
                 title: const Text('Normal'),
@@ -493,6 +573,49 @@ class _YoutubePageState extends State<YoutubePage> {
   }
 }
 
+class Knob extends StatelessWidget {
+  final double size;
+  final double angle;
+
+  const Knob({super.key, required this.size, required this.angle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: angle,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF1A1A1A),
+          border: Border.all(
+            color: const Color(0xFFD8B56D),
+            width: size * 0.05,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              blurRadius: 8,
+              offset: Offset(2, 3),
+              color: Colors.black54,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Container(
+            width: size * 0.08,
+            height: size * 0.4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD8B56D),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class VolumeKnob extends StatelessWidget {
   final int volume;
   final double size;
@@ -526,38 +649,28 @@ class VolumeKnob extends StatelessWidget {
     return GestureDetector(
       onPanDown: (details) => _updateVolume(context, details.localPosition),
       onPanUpdate: (details) => _updateVolume(context, details.localPosition),
-      child: Transform.rotate(
-        angle: (volume / 100) * 2 * math.pi,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF1A1A1A),
-            border: Border.all(
-              color: const Color(0xFFD8B56D),
-              width: size * 0.05,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                blurRadius: 8,
-                offset: Offset(2, 3),
-                color: Colors.black54,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Container(
-              width: size * 0.08,
-              height: size * 0.4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD8B56D),
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: Knob(size: size, angle: (volume / 100) * 2 * math.pi),
+    );
+  }
+}
+
+class ChannelKnob extends StatelessWidget {
+  final int channelIndex;
+  final double size;
+  final VoidCallback onPressed;
+
+  const ChannelKnob({
+    super.key,
+    required this.channelIndex,
+    required this.onPressed,
+    this.size = 40,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Knob(size: size, angle: channelIndex * 0.55),
     );
   }
 }
