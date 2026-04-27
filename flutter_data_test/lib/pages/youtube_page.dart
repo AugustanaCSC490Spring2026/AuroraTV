@@ -8,6 +8,7 @@ import '../models/frame_options.dart';
 import '../services/video_service.dart';
 import '../models/search_options.dart';
 import '../services/gemini_service.dart';
+import 'dart:math' as math;
 
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
@@ -33,6 +34,7 @@ class _YoutubePageState extends State<YoutubePage> {
   final _geminiService = GeminiService();
 
   int currentIndex = 0;
+  int volume = 50;
   bool handledEndPlay = false;
   bool isAccountMenuOpen = false;
   bool isLoadingMore = false;
@@ -114,6 +116,18 @@ class _YoutubePageState extends State<YoutubePage> {
     isLoadingMore = false;
   }
 
+  void changeVolume(int newVolume) {
+    setState(() {
+      volume = newVolume;
+    });
+
+    if (kIsWeb) {
+      webController.setVolume(newVolume);
+    } else {
+      mobileController.setVolume(newVolume);
+    }
+  }
+
   void playNext() async {
     if (currentIndex >= videos.length - 2) {
       debugPrint("loading more videos");
@@ -168,6 +182,31 @@ class _YoutubePageState extends State<YoutubePage> {
                     fit: BoxFit.fill,
                     filterQuality: FilterQuality.high,
                   ),
+                ),
+              ),
+            if (selectedMode == DisplayMode.retroTv)
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final frameWidth = constraints.maxWidth;
+                    final frameHeight = constraints.maxHeight;
+
+                    return Stack(
+                      children: [
+                        Positioned(
+                          right: frameWidth * 0.035,
+                          top: frameHeight * 0.49,
+                          child: PointerInterceptor(
+                            child: VolumeKnob(
+                              volume: volume,
+                              onChanged: changeVolume,
+                              size: frameWidth * 0.075,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
           ],
@@ -449,6 +488,75 @@ class _YoutubePageState extends State<YoutubePage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class VolumeKnob extends StatelessWidget {
+  final int volume;
+  final double size;
+  final ValueChanged<int> onChanged;
+
+  const VolumeKnob({
+    super.key,
+    required this.volume,
+    required this.onChanged,
+    this.size = 40,
+  });
+
+  void _updateVolume(BuildContext context, Offset localPosition) {
+    final box = context.findRenderObject() as RenderBox;
+    final size = box.size;
+    final center = Offset(size.width / 2, size.height / 2);
+    final vector = localPosition - center;
+
+    final angle = math.atan2(vector.dy, vector.dx);
+
+    final newVolume = (((angle + math.pi) / (2 * math.pi)) * 100).round().clamp(
+      0,
+      100,
+    );
+
+    onChanged(newVolume);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onPanDown: (details) => _updateVolume(context, details.localPosition),
+      onPanUpdate: (details) => _updateVolume(context, details.localPosition),
+      child: Transform.rotate(
+        angle: (volume / 100) * 2 * math.pi,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF1A1A1A),
+            border: Border.all(
+              color: const Color(0xFFD8B56D),
+              width: size * 0.05,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                blurRadius: 8,
+                offset: Offset(2, 3),
+                color: Colors.black54,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Container(
+              width: size * 0.08,
+              height: size * 0.4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD8B56D),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
