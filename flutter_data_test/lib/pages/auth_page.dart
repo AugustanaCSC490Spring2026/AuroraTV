@@ -94,6 +94,8 @@ class _AuthPageState extends State<AuthPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Image.asset('assets/images/logo.png', height: 160, width: 160),
+                const SizedBox(height: 24),
                 Text(
                   _isLogin ? "Welcome Back" : "Create Account",
                   style: const TextStyle(
