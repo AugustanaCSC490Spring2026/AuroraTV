@@ -35,6 +35,7 @@ class _AuthPageState extends State<AuthPage> {
           email: emailCtrl.text.trim(),
           password: passwordCtrl.text.trim(),
         );
+        
       } else {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailCtrl.text.trim(),
@@ -82,6 +83,29 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _continueAsGuest() async {
     await FirebaseAuth.instance.signInAnonymously();
   }
+
+Future<void> _forgotPassword() async {
+  if (emailCtrl.text.trim().isEmpty || !emailCtrl.text.contains('@')) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid email first.')),
+    );
+    return;
+  }
+
+  try {
+    await FirebaseAuth.instance
+        .sendPasswordResetEmail(email: emailCtrl.text.trim());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password reset email sent!')),
+    );
+  } on FirebaseAuthException catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message ?? 'Something went wrong.')),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +174,17 @@ class _AuthPageState extends State<AuthPage> {
                         ? 'Passwords do not match'
                         : null,
                   ),
+                  if (_isLogin)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _forgotPassword,
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(color: auroraLight),
+                        ),
+                      ),
+                    ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
