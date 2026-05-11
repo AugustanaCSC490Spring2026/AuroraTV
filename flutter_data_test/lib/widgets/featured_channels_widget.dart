@@ -6,32 +6,12 @@ class FeaturedChannelsWidget extends StatelessWidget {
   final ValueChanged<String> onChannelTap;
 
   static const _channels = [
-    _FeaturedChannel(
-      title: "Lo-fi",
-      keyword: "lofi hip hop radio",
-      icon: Icons.music_note,
-    ),
-    _FeaturedChannel(title: "News", keyword: "live news", icon: Icons.public),
-    _FeaturedChannel(
-      title: "Gaming",
-      keyword: "live gaming stream",
-      icon: Icons.sports_esports,
-    ),
-    _FeaturedChannel(
-      title: "Nature",
-      keyword: "nature live cam",
-      icon: Icons.landscape,
-    ),
-    _FeaturedChannel(
-      title: "Podcasts",
-      keyword: "live podcast",
-      icon: Icons.mic,
-    ),
-    _FeaturedChannel(
-      title: "Throwbacks",
-      keyword: "80s music live",
-      icon: Icons.album,
-    ),
+    _FeaturedChannel(title: "Lo-fi",      keyword: "lofi hip hop radio",  icon: Icons.music_note),
+    _FeaturedChannel(title: "News",       keyword: "live news",            icon: Icons.public),
+    _FeaturedChannel(title: "Gaming",     keyword: "live gaming stream",   icon: Icons.sports_esports),
+    _FeaturedChannel(title: "Nature",     keyword: "nature live cam",      icon: Icons.landscape),
+    _FeaturedChannel(title: "Podcasts",   keyword: "live podcast",         icon: Icons.mic),
+    _FeaturedChannel(title: "Throwbacks", keyword: "80s music live",       icon: Icons.album),
   ];
 
   const FeaturedChannelsWidget({super.key, required this.onChannelTap});
@@ -63,7 +43,6 @@ class FeaturedChannelsWidget extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             final channel = _channels[index];
-
             return GestureDetector(
               onTap: () => onChannelTap(channel.keyword),
               child: Container(
@@ -77,14 +56,7 @@ class FeaturedChannelsWidget extends StatelessWidget {
                   children: [
                     Icon(channel.icon, color: auroraGlow, size: 34),
                     const SizedBox(height: 10),
-                    Text(
-                      channel.title,
-                      style: const TextStyle(
-                        color: auroraMint,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Text(channel.title, style: const TextStyle(color: auroraMint, fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
@@ -101,9 +73,5 @@ class _FeaturedChannel {
   final String keyword;
   final IconData icon;
 
-  const _FeaturedChannel({
-    required this.title,
-    required this.keyword,
-    required this.icon,
-  });
+  const _FeaturedChannel({required this.title, required this.keyword, required this.icon});
 }
