@@ -13,6 +13,8 @@ class FilterDialogWidget extends StatefulWidget {
   final Function(bool, String, String, bool) onApply;
   final VoidCallback onReset;
 
+  final dynamic filterClickbait;
+
   const FilterDialogWidget({
     super.key,
     required this.kidsMode,
@@ -280,7 +282,12 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
           ),
         ElevatedButton(
           onPressed: () {
-            widget.onApply(_kidsMode, _selectedDuration, _selectedVideoType);
+            widget.onApply(
+              _kidsMode,
+              _selectedDuration,
+              _selectedVideoType,
+              _filterClickbait,
+            );
             Navigator.pop(context);
           },
           child: const Text('Apply'),
