@@ -1,35 +1,23 @@
-// Featured channels display widget
 import 'package:flutter/material.dart';
+
 import '../constants/colors.dart';
 
 class FeaturedChannelsWidget extends StatelessWidget {
-  final Function(String) onChannelTap;
+  final ValueChanged<String> onChannelTap;
+
+  static const _channels = [
+    _FeaturedChannel(title: "Lo-fi",      keyword: "lofi hip hop radio",  icon: Icons.music_note),
+    _FeaturedChannel(title: "News",       keyword: "live news",            icon: Icons.public),
+    _FeaturedChannel(title: "Gaming",     keyword: "live gaming stream",   icon: Icons.sports_esports),
+    _FeaturedChannel(title: "Nature",     keyword: "nature live cam",      icon: Icons.landscape),
+    _FeaturedChannel(title: "Podcasts",   keyword: "live podcast",         icon: Icons.mic),
+    _FeaturedChannel(title: "Throwbacks", keyword: "80s music live",       icon: Icons.album),
+  ];
 
   const FeaturedChannelsWidget({super.key, required this.onChannelTap});
 
   @override
   Widget build(BuildContext context) {
-    final channels = [
-      {
-        "title": "Lo-fi",
-        "keyword": "lofi hip hop radio",
-        "icon": Icons.music_note,
-      },
-      {"title": "News", "keyword": "live news", "icon": Icons.public},
-      {
-        "title": "Gaming",
-        "keyword": "live gaming stream",
-        "icon": Icons.sports_esports,
-      },
-      {
-        "title": "Nature",
-        "keyword": "nature live cam",
-        "icon": Icons.landscape,
-      },
-      {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
-      {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -46,7 +34,7 @@ class FeaturedChannelsWidget extends StatelessWidget {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: channels.length,
+          itemCount: _channels.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 10,
@@ -54,12 +42,9 @@ class FeaturedChannelsWidget extends StatelessWidget {
             childAspectRatio: 1.2,
           ),
           itemBuilder: (context, index) {
-            final channel = channels[index];
-
+            final channel = _channels[index];
             return GestureDetector(
-              onTap: () {
-                onChannelTap(channel["keyword"] as String);
-              },
+              onTap: () => onChannelTap(channel.keyword),
               child: Container(
                 decoration: BoxDecoration(
                   color: auroraPanel,
@@ -69,20 +54,9 @@ class FeaturedChannelsWidget extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      channel["icon"] as IconData,
-                      color: auroraGlow,
-                      size: 34,
-                    ),
+                    Icon(channel.icon, color: auroraGlow, size: 34),
                     const SizedBox(height: 10),
-                    Text(
-                      channel["title"] as String,
-                      style: const TextStyle(
-                        color: auroraMint,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Text(channel.title, style: const TextStyle(color: auroraMint, fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
@@ -92,4 +66,12 @@ class FeaturedChannelsWidget extends StatelessWidget {
       ],
     );
   }
+}
+
+class _FeaturedChannel {
+  final String title;
+  final String keyword;
+  final IconData icon;
+
+  const _FeaturedChannel({required this.title, required this.keyword, required this.icon});
 }

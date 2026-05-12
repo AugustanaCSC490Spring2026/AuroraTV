@@ -1,15 +1,17 @@
+import 'dart:math' as math;
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_data_test/constants/colors.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
+import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
+
 import '../models/frame_options.dart';
-import '../services/video_service.dart';
 import '../models/search_options.dart';
 import '../services/gemini_service.dart';
-import 'dart:math' as math;
+import '../services/video_service.dart';
 
 class YoutubePage extends StatefulWidget {
   final List<Map<String, String>> videos;
@@ -97,25 +99,29 @@ class _YoutubePageState extends State<YoutubePage> {
     if (isLoadingMore) return;
     isLoadingMore = true;
 
-    String query = await _geminiService.optimizeSearchQuery(
-      searchOptions.keyword,
-      searchOptions.avoidWords,
-      searchOptions.advancedDescription,
-    );
+    try {
+      final query = await _geminiService.optimizeSearchQuery(
+        searchOptions.keyword,
+        searchOptions.avoidWords,
+        searchOptions.advancedDescription,
+      );
 
-    final moreVideos = await _videoService.fetchVideos(
-      query,
-      kidsMode: searchOptions.kidsMode,
-      selectedDuration: searchOptions.selectedDuration,
-    );
+      final moreVideos = await _videoService.fetchVideos(
+        query,
+        kidsMode: searchOptions.kidsMode,
+        selectedDuration: searchOptions.selectedDuration,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      videos.addAll(moreVideos);
-    });
-
-    isLoadingMore = false;
+      setState(() {
+        videos.addAll(moreVideos);
+      });
+    } catch (e) {
+      debugPrint("Load more videos error: $e");
+    } finally {
+      isLoadingMore = false;
+    }
   }
 
   void changeVolume(int newVolume) {
@@ -354,9 +360,8 @@ class _YoutubePageState extends State<YoutubePage> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: Container(
-                      transform: Matrix4.identity()
-                        ..scale(1.1), 
+                    child: Transform.scale(
+                      scale: 1.1,
                       child: Image.asset(
                         'assets/images/logo.png',
                         fit: BoxFit.contain,
@@ -368,18 +373,18 @@ class _YoutubePageState extends State<YoutubePage> {
             ),
           ],
         ),
-        title: Padding(
-  padding: const EdgeInsets.only(top: 8), // 👈 adjust this
-  child: const Text(
-    "Now Playing",
-    style: TextStyle(
-      color: auroraMint,
-      fontFamily: 'AuroraFont',
-      fontSize: 25,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-),
+        title: const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            "Now Playing",
+            style: TextStyle(
+              color: auroraMint,
+              fontFamily: 'AuroraFont',
+              fontSize: 25,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.skip_next),
@@ -533,7 +538,11 @@ class _YoutubePageState extends State<YoutubePage> {
               const SizedBox(height: 12),
               const Text(
                 'Display Mode',
-                style: TextStyle(fontSize: 18, fontFamily: 'AuroraFont', fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'AuroraFont',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               RadioListTile<DisplayMode>(
                 title: const Text('Normal'),

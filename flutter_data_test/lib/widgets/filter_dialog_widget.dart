@@ -7,8 +7,7 @@ class FilterDialogWidget extends StatefulWidget {
   final bool kidsMode;
   final String selectedDuration;
   final String selectedVideoType;
-  final bool filterClickbait;
-  final String keyword; // ← NEW: so we can save the keyword too
+  final String keyword;
   final TextEditingController avoidWordsCtrl;
   final TextEditingController advancedDescriptionCtrl;
   final Function(bool, String, String, bool) onApply;
@@ -37,7 +36,6 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
   late String _selectedVideoType;
   late bool _filterClickbait;
 
-  // ── NEW ──
   final _categoryNameCtrl = TextEditingController();
   bool _isSaving = false;
   String? _savedCode;
@@ -83,6 +81,24 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
     }
   }
 
+  Widget _buildDropdown<T>(
+    String label,
+    T value,
+    List<T> items,
+    ValueChanged<T?> onChanged,
+  ) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      dropdownColor: auroraPanel,
+      style: const TextStyle(color: auroraMint),
+      decoration: InputDecoration(labelText: label),
+      items: items
+          .map((v) => DropdownMenuItem(value: v, child: Text(v.toString())))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -110,61 +126,35 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                   style: TextStyle(color: auroraMint),
                 ),
                 value: _kidsMode,
-                onChanged: (value) {
-                  setState(() => _kidsMode = value);
-                },
+                onChanged: (value) => setState(() => _kidsMode = value),
               ),
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeColor: auroraGlow,
                 title: const Text(
-                  'Filter Clickbait',
+                  'Kids Mode',
                   style: TextStyle(color: auroraMint),
                 ),
-                subtitle: const Text(
-                  'Remove sensational titles, emojis, and listicles',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                value: _filterClickbait,
-                onChanged: (value) {
-                  setState(() => _filterClickbait = value);
+                value: _kidsMode,
+                onChanged: (value) => setState(() => _kidsMode = value),
+              ),
+              const SizedBox(height: 12),
+              _buildDropdown(
+                'Video Duration',
+                _selectedDuration,
+                ['any', 'short', 'medium', 'long'],
+                (v) {
+                  if (v != null) setState(() => _selectedDuration = v);
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _selectedDuration,
-                dropdownColor: auroraPanel,
-                style: const TextStyle(color: auroraMint),
-                decoration: const InputDecoration(labelText: 'Video Duration'),
-                items: ['any', 'short', 'medium', 'long']
-                    .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedDuration = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _selectedVideoType,
-                dropdownColor: auroraPanel,
-                style: const TextStyle(color: auroraMint),
-                decoration: const InputDecoration(labelText: 'Video Type'),
-                items: ['Any', 'Live', 'Shorts', 'Videos']
-                    .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedVideoType = value);
-                  }
+              _buildDropdown(
+                'Video Type',
+                _selectedVideoType,
+                ['Any', 'Live', 'Shorts', 'Videos'],
+                (v) {
+                  if (v != null) setState(() => _selectedVideoType = v);
                 },
               ),
               const SizedBox(height: 12),
@@ -185,8 +175,6 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                   hintText: 'Optional extra detail',
                 ),
               ),
-
-              // ── NEW: Save & Share section ──
               const SizedBox(height: 20),
               const Divider(color: auroraDeep),
               const SizedBox(height: 8),
@@ -205,10 +193,9 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                   labelText: 'Category Name',
                   hintText: 'e.g. Chill Lo-Fi Evenings',
                 ),
-                onChanged: (_) => setState(() {}), // rebuild to enable button
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 10),
-              // Show the generated code once saved
               if (_savedCode != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -274,7 +261,6 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
           },
           child: const Text('Reset'),
         ),
-        // ── NEW: Save & Share button ──
         if (_isSaving)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12),
@@ -294,12 +280,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
           ),
         ElevatedButton(
           onPressed: () {
-            widget.onApply(
-              _kidsMode,
-              _selectedDuration,
-              _selectedVideoType,
-              _filterClickbait,
-            );
+            widget.onApply(_kidsMode, _selectedDuration, _selectedVideoType);
             Navigator.pop(context);
           },
           child: const Text('Apply'),
