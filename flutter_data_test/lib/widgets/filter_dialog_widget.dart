@@ -7,10 +7,11 @@ class FilterDialogWidget extends StatefulWidget {
   final bool kidsMode;
   final String selectedDuration;
   final String selectedVideoType;
+  final bool filterClickbait;
   final String keyword; // ← NEW: so we can save the keyword too
   final TextEditingController avoidWordsCtrl;
   final TextEditingController advancedDescriptionCtrl;
-  final Function(bool, String, String) onApply;
+  final Function(bool, String, String, bool) onApply;
   final VoidCallback onReset;
 
   const FilterDialogWidget({
@@ -18,6 +19,7 @@ class FilterDialogWidget extends StatefulWidget {
     required this.kidsMode,
     required this.selectedDuration,
     required this.selectedVideoType,
+    required this.filterClickbait,
     required this.keyword,
     required this.avoidWordsCtrl,
     required this.advancedDescriptionCtrl,
@@ -33,6 +35,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
   late bool _kidsMode;
   late String _selectedDuration;
   late String _selectedVideoType;
+  late bool _filterClickbait;
 
   // ── NEW ──
   final _categoryNameCtrl = TextEditingController();
@@ -45,6 +48,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
     _kidsMode = widget.kidsMode;
     _selectedDuration = widget.selectedDuration.toLowerCase();
     _selectedVideoType = widget.selectedVideoType;
+    _filterClickbait = widget.filterClickbait;
   }
 
   @override
@@ -73,9 +77,9 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
       });
     } catch (e) {
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
     }
   }
 
@@ -108,6 +112,23 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                 value: _kidsMode,
                 onChanged: (value) {
                   setState(() => _kidsMode = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: auroraGlow,
+                title: const Text(
+                  'Filter Clickbait',
+                  style: TextStyle(color: auroraMint),
+                ),
+                subtitle: const Text(
+                  'Remove sensational titles, emojis, and listicles',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                value: _filterClickbait,
+                onChanged: (value) {
+                  setState(() => _filterClickbait = value);
                 },
               ),
               const SizedBox(height: 12),
@@ -171,7 +192,10 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
               const SizedBox(height: 8),
               const Text(
                 'Save & Share',
-                style: TextStyle(color: auroraGlow, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: auroraGlow,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -187,14 +211,21 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
               // Show the generated code once saved
               if (_savedCode != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: auroraDeep,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.greenAccent,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _savedCode!,
@@ -207,7 +238,11 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.copy, color: auroraGlow, size: 18),
+                        icon: const Icon(
+                          Icons.copy,
+                          color: auroraGlow,
+                          size: 18,
+                        ),
                         tooltip: 'Copy code',
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: _savedCode!));
@@ -230,6 +265,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
               _kidsMode = false;
               _selectedDuration = 'any';
               _selectedVideoType = 'Any';
+              _filterClickbait = true;
               widget.avoidWordsCtrl.clear();
               widget.advancedDescriptionCtrl.clear();
             });
@@ -252,11 +288,18 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
           TextButton.icon(
             icon: const Icon(Icons.bookmark_add_outlined),
             label: const Text('Save & Share'),
-            onPressed: _categoryNameCtrl.text.trim().isEmpty ? null : _saveCategory,
+            onPressed: _categoryNameCtrl.text.trim().isEmpty
+                ? null
+                : _saveCategory,
           ),
         ElevatedButton(
           onPressed: () {
-            widget.onApply(_kidsMode, _selectedDuration, _selectedVideoType);
+            widget.onApply(
+              _kidsMode,
+              _selectedDuration,
+              _selectedVideoType,
+              _filterClickbait,
+            );
             Navigator.pop(context);
           },
           child: const Text('Apply'),

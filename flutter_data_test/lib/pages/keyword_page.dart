@@ -27,6 +27,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
   bool kidsMode = false;
   String selectedDuration = 'any';
   String selectedVideoType = 'Any';
+  bool filterClickbait = true;
 
   final TextEditingController avoidWordsCtrl = TextEditingController();
   final TextEditingController advancedDescriptionCtrl = TextEditingController();
@@ -49,14 +50,16 @@ class _KeyWordPageState extends State<KeyWordPage> {
         kidsMode: kidsMode,
         selectedDuration: selectedDuration,
         selectedVideoType: selectedVideoType,
+        filterClickbait: filterClickbait,
         keyword: keywordCtrl.text.trim(),
         avoidWordsCtrl: avoidWordsCtrl,
         advancedDescriptionCtrl: advancedDescriptionCtrl,
-        onApply: (kids, duration, type) {
+        onApply: (kids, duration, type, clickbait) {
           setState(() {
             kidsMode = kids;
             selectedDuration = duration;
             selectedVideoType = type;
+            filterClickbait = clickbait;
           });
         },
         onReset: () {
@@ -64,6 +67,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
             kidsMode = false;
             selectedDuration = 'any';
             selectedVideoType = 'Any';
+            filterClickbait = true;
           });
         },
       ),
@@ -205,6 +209,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
       keyword,
       kidsMode: kidsMode,
       selectedDuration: selectedDuration,
+      filterClickbait: filterClickbait,
     );
 
     if (result.isEmpty) {

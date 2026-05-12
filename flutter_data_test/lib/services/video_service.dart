@@ -14,12 +14,17 @@ class VideoService {
 
   VideoService._internal();
 
-  Future<List<Map<String, String>>> fetchVideos(String keyword, {bool kidsMode = false, String selectedDuration = 'any'}) async {
+  Future<List<Map<String, String>>> fetchVideos(
+    String keyword, {
+    bool kidsMode = false,
+    String selectedDuration = 'any',
+    bool filterClickbait = true,
+  }) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
-      'maxResults': '20',
+      'maxResults': '50', // Fetch more to allow filtering
       'videoEmbeddable': 'true',
       'safeSearch': kidsMode ? 'strict' : 'moderate',
       'videoDuration': selectedDuration,
@@ -50,7 +55,76 @@ class VideoService {
       }
     }
 
+    if (filterClickbait) {
+      videos = videos.where((video) => !_isClickbait(video['title']!)).toList();
+    }
+
     videos.shuffle();
-    return videos;
+    return videos.take(20).toList(); // Return up to 20 after filtering
+  }
+
+  bool _isClickbait(String title) {
+    // Convert to lowercase for case-insensitive checks
+    final lowerTitle = title.toLowerCase();
+
+    // Clickbait phrases
+    final clickbaitPhrases = [
+      'you won\'t believe',
+      'you will not believe',
+      'shocking',
+      'unbelievable',
+      'amazing',
+      'incredible',
+      'mind blowing',
+      'blow your mind',
+      'insane',
+      'crazy',
+      'epic',
+      'ultimate',
+      'secret',
+      'hidden',
+      'exposed',
+      'revealed',
+      'truth',
+      'conspiracy',
+      'scandal',
+    ];
+
+    for (final phrase in clickbaitPhrases) {
+      if (lowerTitle.contains(phrase)) {
+        return true;
+      }
+    }
+
+    // Listicles: top/best followed by number
+    final listicleRegex = RegExp(r'\b(top|best)\s+\d+\b', caseSensitive: false);
+    if (listicleRegex.hasMatch(title)) {
+      return true;
+    }
+
+    // Excessive caps: more than 70% of letters are uppercase
+    final letters = RegExp(
+      r'[a-zA-Z]',
+    ).allMatches(title).map((m) => m.group(0)!);
+    if (letters.isNotEmpty) {
+      final upperCount = letters.where((c) => c == c.toUpperCase()).length;
+      if (upperCount / letters.length > 0.7) {
+        return true;
+      }
+    }
+
+    // Emojis: check for characters in emoji Unicode ranges
+    if (title.runes.any(
+      (r) => r >= 0x1F300 && r <= 0x1F9FF || r >= 0x2600 && r <= 0x27BF,
+    )) {
+      return true;
+    }
+
+    // Multiple exclamation marks
+    if (title.contains('!!') || title.contains('???')) {
+      return true;
+    }
+
+    return false;
   }
 }
