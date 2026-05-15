@@ -10,16 +10,15 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 
 import '../models/frame_options.dart';
 import '../models/search_options.dart';
-import '../services/gemini_service.dart';
 import '../services/video_service.dart';
 
 class YoutubePage extends StatefulWidget {
-  final List<Map<String, String>> videos;
+  final Map<String, String> initialVideo;
   final SearchOptions searchOptions;
 
   const YoutubePage({
     super.key,
-    required this.videos,
+    required this.initialVideo,
     required this.searchOptions,
   });
 
@@ -28,30 +27,29 @@ class YoutubePage extends StatefulWidget {
 }
 
 class _YoutubePageState extends State<YoutubePage> {
-  late List<Map<String, String>> videos;
+  late Map<String, String> currentVideo;
   late SearchOptions searchOptions;
   late ypf.YoutubePlayerController mobileController;
   late ypi.YoutubePlayerController webController;
 
   final _videoService = VideoService();
-  final _geminiService = GeminiService();
+  final List<Map<String, String>> playedVideos = [];
+  final Set<String> playedVideoIds = {};
 
-  int currentIndex = 0;
   int currentChannelIndex = 0;
   int volume = 50;
   bool handledEndPlay = false;
   bool isAccountMenuOpen = false;
-  bool isLoadingMore = false;
+  bool isFindingNext = false;
   DisplayMode selectedMode = DisplayMode.normal;
-
-  Map<String, String> get currentVideo => videos[currentIndex];
 
   @override
   void initState() {
     super.initState();
 
-    videos = List.from(widget.videos);
+    currentVideo = Map.from(widget.initialVideo);
     searchOptions = widget.searchOptions;
+    _trackPlayedVideo(currentVideo);
 
     if (kIsWeb) {
       webController = ypi.YoutubePlayerController.fromVideoId(
@@ -95,32 +93,78 @@ class _YoutubePageState extends State<YoutubePage> {
     }
   }
 
-  Future<void> loadMoreVideos() async {
-    if (isLoadingMore) return;
-    isLoadingMore = true;
+  void _trackPlayedVideo(Map<String, String> video) {
+    final videoId = video['videoId'];
+    if (videoId == null || playedVideoIds.contains(videoId)) return;
+
+    playedVideoIds.add(videoId);
+    playedVideos.add(video);
+  }
+
+  Future<Map<String, String>?> _findNextVideo(String keyword) {
+    return _videoService.fetchVideo(
+      keyword,
+      kidsMode: searchOptions.kidsMode,
+      selectedDuration: searchOptions.selectedDuration,
+      filterClickbait: searchOptions.filterClickbait,
+      excludedVideoIds: playedVideoIds,
+    );
+  }
+
+  void _loadVideo(Map<String, String> video) {
+    final nextId = video['videoId'];
+    if (nextId == null) return;
+
+    setState(() {
+      currentVideo = video;
+      handledEndPlay = false;
+      _trackPlayedVideo(video);
+    });
+
+    if (kIsWeb) {
+      webController.loadVideoById(videoId: nextId);
+    } else {
+      mobileController.load(nextId);
+    }
+  }
+
+  Future<void> _showNoVideoFoundMessage() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No new embeddable video found. Try another channel.'),
+      ),
+    );
+  }
+
+  Future<void> findAndPlayNextVideo() async {
+    if (isFindingNext) return;
+
+    setState(() {
+      isFindingNext = true;
+    });
 
     try {
-      final query = await _geminiService.optimizeSearchQuery(
-        searchOptions.keyword,
-        searchOptions.avoidWords,
-        searchOptions.advancedDescription,
-      );
-
-      final moreVideos = await _videoService.fetchVideos(
-        query,
-        kidsMode: searchOptions.kidsMode,
-        selectedDuration: searchOptions.selectedDuration,
-      );
-
+      final nextVideo = await _findNextVideo(searchOptions.keyword);
       if (!mounted) return;
 
-      setState(() {
-        videos.addAll(moreVideos);
-      });
+      if (nextVideo == null) {
+        await _showNoVideoFoundMessage();
+        return;
+      }
+
+      _loadVideo(nextVideo);
     } catch (e) {
-      debugPrint("Load more videos error: $e");
+      debugPrint("Find next video error: $e");
+      await _showNoVideoFoundMessage();
     } finally {
-      isLoadingMore = false;
+      if (mounted) {
+        setState(() {
+          isFindingNext = false;
+        });
+      } else {
+        isFindingNext = false;
+      }
     }
   }
 
@@ -138,56 +182,45 @@ class _YoutubePageState extends State<YoutubePage> {
 
   Future<void> switchChannel() async {
     final nextIndex = (currentChannelIndex + 1) % channels.length;
-    final keyword = channels[nextIndex]["keyword"];
+    final keyword = channels[nextIndex]["keyword"] as String?;
 
     if (keyword == null) return;
 
     try {
-      final newVideos = await _videoService.fetchVideos(
-        keyword as String,
+      final newVideo = await _videoService.fetchVideo(
+        keyword,
         kidsMode: searchOptions.kidsMode,
         selectedDuration: searchOptions.selectedDuration,
+        filterClickbait: searchOptions.filterClickbait,
+        excludedVideoIds: playedVideoIds,
       );
 
-      if (!mounted || newVideos.isEmpty) return;
-
-      final newVideoId = newVideos[0]['videoId'];
-      if (newVideoId == null) return;
+      if (!mounted) return;
+      if (newVideo == null) {
+        await _showNoVideoFoundMessage();
+        return;
+      }
 
       setState(() {
         currentChannelIndex = nextIndex;
-        videos = newVideos;
-        currentIndex = 0;
+        searchOptions = SearchOptions(
+          keyword: keyword,
+          kidsMode: searchOptions.kidsMode,
+          selectedDuration: searchOptions.selectedDuration,
+          filterClickbait: searchOptions.filterClickbait,
+          avoidWords: searchOptions.avoidWords,
+          advancedDescription: searchOptions.advancedDescription,
+        );
         handledEndPlay = false;
       });
 
-      if (kIsWeb) {
-        webController.loadVideoById(videoId: newVideoId);
-      } else {
-        mobileController.load(newVideoId);
-      }
+      _loadVideo(newVideo);
     } catch (e) {
       debugPrint("Channel switch error: $e");
     }
   }
 
-  void playNext() async {
-    if (currentIndex >= videos.length - 2) {
-      debugPrint("loading more videos");
-      await loadMoreVideos();
-    }
-    if (currentIndex + 1 >= videos.length) return;
-    setState(() {
-      currentIndex++;
-      handledEndPlay = false;
-    });
-    final nextId = currentVideo['videoId']!;
-    if (kIsWeb) {
-      webController.loadVideoById(videoId: nextId);
-    } else {
-      mobileController.load(nextId);
-    }
-  }
+  void playNext() => findAndPlayNextVideo();
 
   @override
   void deactivate() {
@@ -387,9 +420,15 @@ class _YoutubePageState extends State<YoutubePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.skip_next),
-            onPressed: currentIndex + 1 < videos.length ? playNext : null,
-            tooltip: "Skip",
+            icon: isFindingNext
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.skip_next),
+            onPressed: isFindingNext ? null : playNext,
+            tooltip: "Find next",
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.account_circle_outlined),

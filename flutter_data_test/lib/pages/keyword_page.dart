@@ -205,14 +205,14 @@ class _KeyWordPageState extends State<KeyWordPage> {
     }
     premadeCategory = false;
 
-    final result = await _videoService.fetchVideos(
+    final result = await _videoService.fetchVideo(
       keyword,
       kidsMode: kidsMode,
       selectedDuration: selectedDuration,
       filterClickbait: filterClickbait,
     );
 
-    if (result.isEmpty) {
+    if (result == null) {
       setState(() {
         videoTitle = null;
         videoUrl = null;
@@ -229,9 +229,9 @@ class _KeyWordPageState extends State<KeyWordPage> {
       return;
     }
 
-    final id = result[0]['videoId']!;
-    final title = result[0]['title'] ?? '';
-    final url = result[0]['url']!;
+    final id = result['videoId']!;
+    final title = result['title'] ?? '';
+    final url = result['url']!;
 
     setState(() {
       videoTitle = title;
@@ -244,6 +244,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
       keyword: keyword,
       kidsMode: kidsMode,
       selectedDuration: selectedDuration,
+      filterClickbait: filterClickbait,
       avoidWords: avoidWordsCtrl.text.trim(),
       advancedDescription: advancedDescriptionCtrl.text.trim(),
     );
@@ -252,7 +253,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
     final selectedKeyword = await nav.push<String>(
       MaterialPageRoute(
         builder: (_) =>
-            YoutubePage(videos: result, searchOptions: searchOptions),
+            YoutubePage(initialVideo: result, searchOptions: searchOptions),
       ),
     );
 

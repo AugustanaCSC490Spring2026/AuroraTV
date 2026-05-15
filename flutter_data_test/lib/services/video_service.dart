@@ -14,17 +14,18 @@ class VideoService {
 
   VideoService._internal();
 
-  Future<List<Map<String, String>>> fetchVideos(
+  Future<Map<String, String>?> fetchVideo(
     String keyword, {
     bool kidsMode = false,
     String selectedDuration = 'any',
     bool filterClickbait = true,
+    Set<String> excludedVideoIds = const {},
   }) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
       'part': 'snippet',
       'q': keyword,
       'type': 'video',
-      'maxResults': '50', // Fetch more to allow filtering
+      'maxResults': '25',
       'videoEmbeddable': 'true',
       'safeSearch': kidsMode ? 'strict' : 'moderate',
       'videoDuration': selectedDuration,
@@ -33,9 +34,12 @@ class VideoService {
 
     final res = await http.get(uri);
     final data = jsonDecode(res.body);
-    final allItems = data['items'];
+    if (data is! Map<String, dynamic>) return null;
 
-    List<Map<String, String>> videos = [];
+    final allItems = data['items'];
+    if (allItems is! List) return null;
+
+    final videos = <Map<String, String>>[];
 
     for (final item in allItems) {
       if (item['id'] is! Map<String, dynamic>) continue;
@@ -46,21 +50,18 @@ class VideoService {
 
       if ((videoId is String && videoId.isNotEmpty) &&
           (videoTitle is String && videoTitle.isNotEmpty)) {
+        if (excludedVideoIds.contains(videoId)) continue;
+
+        final title = unescape.convert(videoTitle);
+        if (filterClickbait && _isClickbait(title)) continue;
+
         final videoUrl = "https://www.youtube.com/watch?v=$videoId";
-        videos.add({
-          'videoId': videoId,
-          'title': unescape.convert(videoTitle),
-          'url': videoUrl,
-        });
+        videos.add({'videoId': videoId, 'title': title, 'url': videoUrl});
       }
     }
 
-    if (filterClickbait) {
-      videos = videos.where((video) => !_isClickbait(video['title']!)).toList();
-    }
-
     videos.shuffle();
-    return videos.take(20).toList(); // Return up to 20 after filtering
+    return videos.isEmpty ? null : videos.first;
   }
 
   bool _isClickbait(String title) {
