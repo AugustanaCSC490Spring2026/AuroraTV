@@ -107,6 +107,8 @@ class _YoutubePageState extends State<YoutubePage> {
       kidsMode: searchOptions.kidsMode,
       selectedDuration: searchOptions.selectedDuration,
       filterClickbait: searchOptions.filterClickbait,
+      avoidWords: searchOptions.avoidWords,
+      metadataContext: searchOptions.advancedDescription,
       excludedVideoIds: playedVideoIds,
     );
   }
@@ -192,6 +194,8 @@ class _YoutubePageState extends State<YoutubePage> {
         kidsMode: searchOptions.kidsMode,
         selectedDuration: searchOptions.selectedDuration,
         filterClickbait: searchOptions.filterClickbait,
+        avoidWords: searchOptions.avoidWords,
+        metadataContext: searchOptions.advancedDescription,
         excludedVideoIds: playedVideoIds,
       );
 

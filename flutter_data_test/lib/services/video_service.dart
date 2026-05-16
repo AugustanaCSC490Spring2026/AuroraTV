@@ -19,6 +19,8 @@ class VideoService {
     bool kidsMode = false,
     String selectedDuration = 'any',
     bool filterClickbait = true,
+    String avoidWords = '',
+    String metadataContext = '',
     Set<String> excludedVideoIds = const {},
   }) async {
     final uri = Uri.https('www.googleapis.com', '/youtube/v3/search', {
@@ -39,14 +41,15 @@ class VideoService {
     final allItems = data['items'];
     if (allItems is! List) return null;
 
-    final videos = <Map<String, String>>[];
+    final videosById = <String, Map<String, String>>{};
 
     for (final item in allItems) {
       if (item['id'] is! Map<String, dynamic>) continue;
       if (item['snippet'] is! Map<String, dynamic>) continue;
 
       final videoId = item['id']['videoId'];
-      final videoTitle = item['snippet']['title'];
+      final snippet = item['snippet'] as Map<String, dynamic>;
+      final videoTitle = snippet['title'];
 
       if ((videoId is String && videoId.isNotEmpty) &&
           (videoTitle is String && videoTitle.isNotEmpty)) {
@@ -56,12 +59,126 @@ class VideoService {
         if (filterClickbait && _isClickbait(title)) continue;
 
         final videoUrl = "https://www.youtube.com/watch?v=$videoId";
-        videos.add({'videoId': videoId, 'title': title, 'url': videoUrl});
+        videosById[videoId] = {
+          'videoId': videoId,
+          'title': title,
+          'url': videoUrl,
+          'description': unescape.convert(snippet['description'] ?? ''),
+          'channelTitle': unescape.convert(snippet['channelTitle'] ?? ''),
+          'tags': '',
+        };
       }
     }
 
-    videos.shuffle();
-    return videos.isEmpty ? null : videos.first;
+    if (videosById.isEmpty) return null;
+
+    await _hydrateVideoMetadata(videosById);
+
+    final rankedVideos = _rankVideos(
+      videosById.values.toList(),
+      keyword: keyword,
+      metadataContext: metadataContext,
+      avoidWords: avoidWords,
+    );
+
+    return rankedVideos.isEmpty ? null : rankedVideos.first.video;
+  }
+
+  Future<void> _hydrateVideoMetadata(
+    Map<String, Map<String, String>> videosById,
+  ) async {
+    final uri = Uri.https('www.googleapis.com', '/youtube/v3/videos', {
+      'part': 'snippet',
+      'id': videosById.keys.join(','),
+      'key': youtubeApiKey,
+    });
+
+    final res = await http.get(uri);
+    final data = jsonDecode(res.body);
+    if (data is! Map<String, dynamic>) return;
+
+    final items = data['items'];
+    if (items is! List) return;
+
+    for (final item in items) {
+      if (item is! Map<String, dynamic>) continue;
+      final id = item['id'];
+      final snippet = item['snippet'];
+      if (id is! String || snippet is! Map<String, dynamic>) continue;
+
+      final video = videosById[id];
+      if (video == null) continue;
+
+      final tags = snippet['tags'];
+      video['description'] = unescape.convert(snippet['description'] ?? '');
+      video['channelTitle'] = unescape.convert(snippet['channelTitle'] ?? '');
+      video['tags'] = tags is List ? tags.join(' ') : '';
+    }
+  }
+
+  List<_RankedVideo> _rankVideos(
+    List<Map<String, String>> videos, {
+    required String keyword,
+    required String metadataContext,
+    required String avoidWords,
+  }) {
+    final queryTerms = _termsFor('$keyword $metadataContext');
+    final blockedTerms = _termsFor(avoidWords);
+    final rankedVideos = <_RankedVideo>[];
+
+    for (final video in videos) {
+      final title = video['title']?.toLowerCase() ?? '';
+      final description = video['description']?.toLowerCase() ?? '';
+      final tags = video['tags']?.toLowerCase() ?? '';
+      final searchableText = '$title $description $tags';
+
+      if (blockedTerms.any(searchableText.contains)) continue;
+
+      var score = 0;
+      for (final term in queryTerms) {
+        if (title.contains(term)) score += 6;
+        if (tags.contains(term)) score += 4;
+        if (description.contains(term)) score += 2;
+      }
+
+      if (queryTerms.isNotEmpty &&
+          queryTerms.every((term) => searchableText.contains(term))) {
+        score += 8;
+      }
+
+      rankedVideos.add(_RankedVideo(video: video, score: score));
+    }
+
+    rankedVideos.shuffle();
+    rankedVideos.sort((a, b) => b.score.compareTo(a.score));
+    return rankedVideos;
+  }
+
+  List<String> _termsFor(String text) {
+    const stopWords = {
+      'about',
+      'after',
+      'and',
+      'are',
+      'for',
+      'from',
+      'into',
+      'the',
+      'this',
+      'that',
+      'video',
+      'videos',
+      'with',
+      'you',
+      'your',
+    };
+
+    return text
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((term) => term.length > 2 && !stopWords.contains(term))
+        .toSet()
+        .toList();
   }
 
   bool _isClickbait(String title) {
@@ -128,4 +245,11 @@ class VideoService {
 
     return false;
   }
+}
+
+class _RankedVideo {
+  final Map<String, String> video;
+  final int score;
+
+  const _RankedVideo({required this.video, required this.score});
 }

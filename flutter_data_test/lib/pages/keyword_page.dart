@@ -210,6 +210,8 @@ class _KeyWordPageState extends State<KeyWordPage> {
       kidsMode: kidsMode,
       selectedDuration: selectedDuration,
       filterClickbait: filterClickbait,
+      avoidWords: avoidWordsCtrl.text.trim(),
+      metadataContext: advancedDescriptionCtrl.text.trim(),
     );
 
     if (result == null) {
