@@ -3,14 +3,15 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_data_test/constants/colors.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as ypf;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as ypi;
 
+import '../constants/colors.dart';
 import '../models/frame_options.dart';
 import '../models/search_options.dart';
 import '../services/video_service.dart';
+import '../widgets/retro_ui.dart';
 
 class YoutubePage extends StatefulWidget {
   final Map<String, String> initialVideo;
@@ -33,6 +34,7 @@ class _YoutubePageState extends State<YoutubePage> {
   late ypi.YoutubePlayerController webController;
 
   final _videoService = VideoService();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<Map<String, String>> playedVideos = [];
   final Set<String> playedVideoIds = {};
 
@@ -42,6 +44,23 @@ class _YoutubePageState extends State<YoutubePage> {
   bool isAccountMenuOpen = false;
   bool isFindingNext = false;
   DisplayMode selectedMode = DisplayMode.normal;
+
+  final channels = const [
+    {
+      'title': 'Lo-fi',
+      'keyword': 'lofi hip hop radio',
+      'icon': Icons.music_note,
+    },
+    {'title': 'News', 'keyword': 'live news', 'icon': Icons.public},
+    {
+      'title': 'Gaming',
+      'keyword': 'live gaming stream',
+      'icon': Icons.sports_esports,
+    },
+    {'title': 'Nature', 'keyword': 'nature live cam', 'icon': Icons.landscape},
+    {'title': 'Podcasts', 'keyword': 'live podcast', 'icon': Icons.mic},
+    {'title': 'Throwbacks', 'keyword': '80s music live', 'icon': Icons.album},
+  ];
 
   @override
   void initState() {
@@ -157,7 +176,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
       _loadVideo(nextVideo);
     } catch (e) {
-      debugPrint("Find next video error: $e");
+      debugPrint('Find next video error: $e');
       await _showNoVideoFoundMessage();
     } finally {
       if (mounted) {
@@ -184,7 +203,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
   Future<void> switchChannel() async {
     final nextIndex = (currentChannelIndex + 1) % channels.length;
-    final keyword = channels[nextIndex]["keyword"] as String?;
+    final keyword = channels[nextIndex]['keyword'] as String?;
 
     if (keyword == null) return;
 
@@ -220,7 +239,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
       _loadVideo(newVideo);
     } catch (e) {
-      debugPrint("Channel switch error: $e");
+      debugPrint('Channel switch error: $e');
     }
   }
 
@@ -234,99 +253,6 @@ class _YoutubePageState extends State<YoutubePage> {
     super.deactivate();
   }
 
-  Widget buildVideoPlayer(Widget player) {
-    return Center(
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  42, // left
-                  28, // top
-                  42, // right
-                  32, // bottom
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: player,
-                ),
-              ),
-            ),
-            if (selectedMode == DisplayMode.retroTv)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Image.asset(
-                    frameAssetMap[DisplayMode.retroTv]!,
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.high,
-                  ),
-                ),
-              ),
-            if (selectedMode == DisplayMode.retroTv)
-              Positioned.fill(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final frameWidth = constraints.maxWidth;
-                    final frameHeight = constraints.maxHeight;
-
-                    return Stack(
-                      children: [
-                        Positioned(
-                          right: frameWidth * 0.035,
-                          top: frameHeight * 0.49,
-                          child: PointerInterceptor(
-                            child: Column(
-                              children: [
-                                VolumeKnob(
-                                  volume: volume,
-                                  onChanged: changeVolume,
-                                  size: frameWidth * 0.075,
-                                ),
-                                const SizedBox(height: 1),
-                                Text(
-                                  'VOL',
-                                  style: TextStyle(
-                                    color: const Color(0xFFD8B56D),
-                                    fontFamily: 'AuroraFont',
-                                    fontSize: frameWidth * 0.018,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 2),
-
-                                ChannelKnob(
-                                  channelIndex: currentChannelIndex,
-                                  onPressed: switchChannel,
-                                  size: frameWidth * 0.075,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'CH',
-                                  style: TextStyle(
-                                    color: const Color(0xFFD8B56D),
-                                    fontFamily: 'AuroraFont',
-                                    fontSize: frameWidth * 0.018,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     if (kIsWeb) {
@@ -337,22 +263,334 @@ class _YoutubePageState extends State<YoutubePage> {
     super.dispose();
   }
 
-  final channels = [
-    {
-      "title": "Lo-fi",
-      "keyword": "lofi hip hop radio",
-      "icon": Icons.music_note,
-    },
-    {"title": "News", "keyword": "live news", "icon": Icons.public},
-    {
-      "title": "Gaming",
-      "keyword": "live gaming stream",
-      "icon": Icons.sports_esports,
-    },
-    {"title": "Nature", "keyword": "nature live cam", "icon": Icons.landscape},
-    {"title": "Podcasts", "keyword": "live podcast", "icon": Icons.mic},
-    {"title": "Throwbacks", "keyword": "80s music live", "icon": Icons.album},
-  ];
+  Widget buildVideoPlayer(Widget player) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 980),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: RetroPanel(
+            padding: const EdgeInsets.all(18),
+            shadowOffset: const Offset(10, 10),
+            borderWidth: 5,
+            child: Row(
+              children: [
+                Expanded(child: _buildScreen(player)),
+                const SizedBox(width: 16),
+                PointerInterceptor(child: _buildControlColumn()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScreen(Widget player) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: auroraInk, width: 4),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [auroraBlue, auroraYellow, auroraGreen],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(child: ClipRect(child: player)),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(opacity: 0.22, child: RetroScanlines()),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            top: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              color: auroraInk,
+              child: Text(
+                'CH ${(currentChannelIndex + 1).toString().padLeft(2, '0')}',
+                style: const TextStyle(
+                  color: auroraCream,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ),
+          if (selectedMode == DisplayMode.retroTv)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Image.asset(
+                  frameAssetMap[DisplayMode.retroTv]!,
+                  fit: BoxFit.fill,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlColumn() {
+    return SizedBox(
+      width: 104,
+      child: Column(
+        children: [
+          Expanded(
+            child: _ControlSlot(
+              label: 'VOL',
+              child: VolumeKnob(
+                volume: volume,
+                onChanged: changeVolume,
+                size: 54,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: _ControlSlot(
+              label: 'TUNE',
+              child: ChannelKnob(
+                channelIndex: currentChannelIndex,
+                onPressed: switchChannel,
+                size: 54,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: _ControlSlot(
+              label: 'NEXT',
+              child: IconButton(
+                tooltip: 'Find next',
+                onPressed: isFindingNext ? null : playNext,
+                icon: isFindingNext
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      )
+                    : const Icon(Icons.skip_next_rounded, size: 34),
+                color: auroraInk,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNowPlayingPanel() {
+    return RetroPanel(
+      padding: const EdgeInsets.all(16),
+      shadowOffset: const Offset(7, 7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const RetroWindowBar(title: 'NOW_PLAYING.EXE'),
+          const SizedBox(height: 14),
+          Text(
+            currentVideo['title'] ?? '',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currentVideo['url'] ?? '',
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDisplayPanel() {
+    return RetroPanel(
+      padding: const EdgeInsets.all(16),
+      shadowOffset: const Offset(7, 7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Display Mode', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          _DisplayChoice(
+            title: 'Normal',
+            value: DisplayMode.normal,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                selectedMode = value;
+              });
+            },
+          ),
+          _DisplayChoice(
+            title: 'Retro TV',
+            value: DisplayMode.retroTv,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                selectedMode = value;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return PointerInterceptor(
+      child: Drawer(
+        backgroundColor: auroraCream,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(color: auroraBlue),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.home_rounded, color: auroraInk),
+                    title: const Text(
+                      'Home',
+                      style: TextStyle(
+                        color: auroraInk,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Channels',
+                    style: TextStyle(
+                      color: auroraInk,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...channels.map((channel) {
+              return ListTile(
+                leading: Icon(channel['icon'] as IconData, color: auroraInk),
+                title: Text(
+                  channel['title'] as String,
+                  style: const TextStyle(
+                    color: auroraInk,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                onTap: () {
+                  final keyword = channel['keyword'] as String;
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  nav.pop(keyword);
+                },
+              );
+            }),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.add_rounded, color: auroraInk),
+              title: const Text(
+                'Create Channel',
+                style: TextStyle(color: auroraInk, fontWeight: FontWeight.w800),
+              ),
+              onTap: () {
+                final nav = Navigator.of(context);
+                nav.pop();
+
+                final controller = TextEditingController();
+
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) {
+                    return Dialog(
+                      backgroundColor: Colors.transparent,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 460),
+                        child: RetroPanel(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Create Channel',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: controller,
+                                autofocus: true,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter a search term',
+                                  prefixIcon: Icon(Icons.search_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                alignment: WrapAlignment.end,
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  SizedBox(
+                                    width: 120,
+                                    child: RetroButton(
+                                      label: 'Cancel',
+                                      icon: Icons.close_rounded,
+                                      isPrimary: false,
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 120,
+                                    child: RetroButton(
+                                      label: 'Open',
+                                      icon: Icons.play_arrow_rounded,
+                                      onPressed: () {
+                                        final keyword = controller.text.trim();
+                                        Navigator.pop(dialogContext);
+                                        if (keyword.isNotEmpty) {
+                                          nav.pop(keyword);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -374,70 +612,22 @@ class _YoutubePageState extends State<YoutubePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        leadingWidth: 120,
-        leading: Row(
-          children: [
-            // Hamburger menu
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              ),
-            ),
-            // Logo
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 6.0),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: Transform.scale(
-                      scale: 1.1,
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        title: const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: Text(
-            "Now Playing",
-            style: TextStyle(
-              color: auroraMint,
-              fontFamily: 'AuroraFont',
-              fontSize: 25,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+      key: _scaffoldKey,
+      appBar: RetroAppBar(
+        title: 'Entertainment Room',
+        leadingIcon: Icons.menu_rounded,
+        onLeadingPressed: () => _scaffoldKey.currentState?.openDrawer(),
         actions: [
-          IconButton(
-            icon: isFindingNext
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.skip_next),
-            onPressed: isFindingNext ? null : playNext,
-            tooltip: "Find next",
+          RetroIconButton(
+            tooltip: 'Back to shelf',
+            icon: Icons.arrow_back_rounded,
+            isPrimary: true,
+            onPressed: () => Navigator.pop(context),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle_outlined),
-            tooltip: "Account",
-            color: const Color(0xFF04131F),
+            tooltip: 'Account',
+            color: auroraCream,
+            surfaceTintColor: Colors.transparent,
             onOpened: () {
               setState(() {
                 isAccountMenuOpen = true;
@@ -455,7 +645,7 @@ class _YoutubePageState extends State<YoutubePage> {
 
               if (value == 'logout') {
                 await FirebaseAuth.instance.signOut();
-                if (!mounted) return;
+                if (!context.mounted) return;
                 Navigator.of(
                   context,
                   rootNavigator: true,
@@ -463,155 +653,35 @@ class _YoutubePageState extends State<YoutubePage> {
               }
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'profile',
-                child: Text('Profile', style: TextStyle(color: Colors.white)),
-              ),
-              PopupMenuItem(
-                value: 'settings',
-                child: Text('Settings', style: TextStyle(color: Colors.white)),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: Text('Logout', style: TextStyle(color: Colors.white)),
-              ),
+              PopupMenuItem(value: 'profile', child: Text('Profile')),
+              PopupMenuItem(value: 'settings', child: Text('Settings')),
+              PopupMenuItem(value: 'logout', child: Text('Logout')),
             ],
+            child: const RetroIconButton(
+              tooltip: 'Account',
+              icon: Icons.person_rounded,
+            ),
           ),
         ],
       ),
-      drawer: PointerInterceptor(
-        child: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              DrawerHeader(
-                decoration: const BoxDecoration(color: Colors.black87),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.home, color: Colors.white),
-                      title: const Text(
-                        "Home",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Channels",
-                      style: TextStyle(color: Colors.white, fontSize: 22),
-                    ),
-                  ],
-                ),
-              ),
-              ...channels.map((channel) {
-                return ListTile(
-                  leading: Icon(channel["icon"] as IconData),
-                  title: Text(channel["title"] as String),
-                  onTap: () {
-                    final keyword = channel["keyword"] as String;
-                    Navigator.pop(context);
-                    Future.microtask(() {
-                      Navigator.of(this.context).pop(keyword);
-                    });
-                  },
-                );
-              }),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text("Create Channel"),
-                onTap: () {
-                  Navigator.pop(context);
-
-                  final controller = TextEditingController();
-
-                  showDialog(
-                    context: this.context,
-                    builder: (dialogContext) {
-                      return AlertDialog(
-                        title: const Text("Create Channel"),
-                        content: TextField(
-                          controller: controller,
-                          decoration: const InputDecoration(
-                            hintText: "Enter a search term",
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            child: const Text("Cancel"),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              final keyword = controller.text.trim();
-                              Navigator.pop(dialogContext);
-                              if (keyword.isNotEmpty) {
-                                Future.microtask(() {
-                                  Navigator.of(this.context).pop(keyword);
-                                });
-                              }
-                            },
-                            child: const Text("Open"),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+      drawer: _buildDrawer(),
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.all(12),
-            children: [
-              buildVideoPlayer(player),
-              const SizedBox(height: 12),
-              const Text(
-                'Display Mode',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'AuroraFont',
-                  fontWeight: FontWeight.bold,
-                ),
+          ResponsivePage(
+            maxWidth: 1040,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  buildVideoPlayer(player),
+                  const SizedBox(height: 28),
+                  _buildNowPlayingPanel(),
+                  const SizedBox(height: 22),
+                  _buildDisplayPanel(),
+                  const SizedBox(height: 18),
+                ],
               ),
-              RadioListTile<DisplayMode>(
-                title: const Text('Normal'),
-                value: DisplayMode.normal,
-                groupValue: selectedMode,
-                onChanged: (value) {
-                  setState(() {
-                    selectedMode = value!;
-                  });
-                },
-              ),
-              RadioListTile<DisplayMode>(
-                title: const Text('Retro TV'),
-                value: DisplayMode.retroTv,
-                groupValue: selectedMode,
-                onChanged: (value) {
-                  setState(() {
-                    selectedMode = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              Text(currentVideo['title'] ?? ''),
-              const SizedBox(height: 8),
-              Text(currentVideo['url'] ?? ''),
-            ],
+            ),
           ),
           if (isAccountMenuOpen)
             Positioned.fill(
@@ -620,6 +690,93 @@ class _YoutubePageState extends State<YoutubePage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _ControlSlot extends StatelessWidget {
+  const _ControlSlot({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: label == 'NEXT' ? auroraYellow : auroraGreen,
+        border: Border.all(color: auroraInk, width: 3),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(child: Center(child: child)),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: auroraInk,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DisplayChoice extends StatelessWidget {
+  const _DisplayChoice({
+    required this.title,
+    required this.value,
+    required this.groupValue,
+    required this.onChanged,
+  });
+
+  final String title;
+  final DisplayMode value;
+  final DisplayMode groupValue;
+  final ValueChanged<DisplayMode?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = value == groupValue;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Material(
+        color: selected ? auroraGreen : auroraWhite,
+        child: InkWell(
+          onTap: () => onChanged(value),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: auroraInk, width: 3),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  selected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: auroraInk,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: auroraInk,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -640,25 +797,18 @@ class Knob extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF1A1A1A),
-          border: Border.all(
-            color: const Color(0xFFD8B56D),
-            width: size * 0.05,
-          ),
+          color: auroraCream,
+          border: Border.all(color: auroraInk, width: size * 0.08),
           boxShadow: const [
-            BoxShadow(
-              blurRadius: 8,
-              offset: Offset(2, 3),
-              color: Colors.black54,
-            ),
+            BoxShadow(blurRadius: 0, offset: Offset(3, 3), color: auroraShadow),
           ],
         ),
         child: Center(
           child: Container(
             width: size * 0.08,
-            height: size * 0.4,
+            height: size * 0.42,
             decoration: BoxDecoration(
-              color: const Color(0xFFD8B56D),
+              color: auroraInk,
               borderRadius: BorderRadius.circular(20),
             ),
           ),

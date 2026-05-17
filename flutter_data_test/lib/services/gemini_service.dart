@@ -18,7 +18,11 @@ class GeminiService {
     );
   }
 
-  Future<String> optimizeSearchQuery(String keyword, String avoidWords, String advancedDescription) async {
+  Future<String> optimizeSearchQuery(
+    String keyword,
+    String avoidWords,
+    String advancedDescription,
+  ) async {
     debugPrint("Gemini used");
 
     if (avoidWords.isNotEmpty) {

@@ -13,10 +13,14 @@ class CategoryService {
   String _generateShareCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rand = Random.secure();
-    final part1 =
-        List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
-    final part2 =
-        List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
+    final part1 = List.generate(
+      3,
+      (_) => chars[rand.nextInt(chars.length)],
+    ).join();
+    final part2 = List.generate(
+      3,
+      (_) => chars[rand.nextInt(chars.length)],
+    ).join();
     return '$part1-$part2';
   }
 
@@ -59,15 +63,16 @@ class CategoryService {
     final cleaned = code.toUpperCase().trim();
 
     // Fast lookup: share_codes/{code} → categoryId
-    final codeSnap =
-        await _db.collection('share_codes').doc(cleaned).get();
+    final codeSnap = await _db.collection('share_codes').doc(cleaned).get();
     if (!codeSnap.exists) return null;
 
     final categoryId = codeSnap['categoryId'] as String;
 
     // Fetch the actual category
-    final catSnap =
-        await _db.collection('shared_categories').doc(categoryId).get();
+    final catSnap = await _db
+        .collection('shared_categories')
+        .doc(categoryId)
+        .get();
     if (!catSnap.exists) return null;
 
     // Bump usage counter in the background (don't await)

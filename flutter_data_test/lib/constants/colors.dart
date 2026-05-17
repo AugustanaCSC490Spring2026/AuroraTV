@@ -1,12 +1,18 @@
-// Color constants and theme definitions for Aurora TV app
 import 'package:flutter/material.dart';
 
-const Color auroraMint = Color(0xFFC5FDD3);
-const Color auroraLight = Color(0xFF94E1B4);
-const Color auroraGreen = Color(0xFF69C5A0);
-const Color auroraTeal = Color(0xFF45A994);
-const Color auroraBlueTeal = Color(0xFF288D8A);
-const Color auroraDeep = Color(0xFF126171);
-const Color auroraNavy = Color(0xFF033854);
-const Color auroraPanel = Color(0xFF08263D);
-const Color auroraGlow = Color(0xFF5EF2D6);
+const Color auroraInk = Color(0xFFC96E5A);
+const Color auroraCream = Color(0xFFF3DBBA);
+const Color auroraBlue = Color(0xFF9FC8C7);
+const Color auroraGreen = Color(0xFF7DAE93);
+const Color auroraYellow = Color(0xFFE2A667);
+const Color auroraWhite = Color(0xFFFFFFFF);
+const Color auroraShadow = Color(0xFFC96E5A);
+
+const Color auroraMint = auroraCream;
+const Color auroraLight = auroraBlue;
+const Color auroraTeal = auroraGreen;
+const Color auroraBlueTeal = auroraBlue;
+const Color auroraDeep = auroraInk;
+const Color auroraNavy = Color(0xFFF8E7CF);
+const Color auroraPanel = auroraCream;
+const Color auroraGlow = auroraYellow;

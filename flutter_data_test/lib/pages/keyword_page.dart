@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'youtube_page.dart';
+import 'package:flutter/material.dart';
+
 import '../constants/colors.dart';
-import '../services/video_service.dart';
-import '../services/gemini_service.dart';
-import '../services/category_service.dart';
 import '../models/search_options.dart';
+import '../services/category_service.dart';
+import '../services/gemini_service.dart';
+import '../services/video_service.dart';
 import '../widgets/featured_channels_widget.dart';
 import '../widgets/filter_dialog_widget.dart';
+import '../widgets/retro_ui.dart';
+import 'youtube_page.dart';
 
 class KeyWordPage extends StatefulWidget {
   const KeyWordPage({super.key});
@@ -74,7 +76,6 @@ class _KeyWordPageState extends State<KeyWordPage> {
     );
   }
 
-  // ── NEW: Import a shared category by code ──
   void _openImportDialog() {
     final codeCtrl = TextEditingController();
     bool isImporting = false;
@@ -82,113 +83,130 @@ class _KeyWordPageState extends State<KeyWordPage> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: auroraPanel,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: auroraDeep, width: 1.2),
-          ),
-          title: const Text(
-            'Import Category',
-            style: TextStyle(color: auroraMint, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Enter a share code to load another user\'s filters.',
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: codeCtrl,
-                style: const TextStyle(
-                  color: Colors.white,
-                  letterSpacing: 3,
-                  fontSize: 18,
-                ),
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Share Code',
-                  hintText: 'e.g. LF7-X2K',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            if (isImporting)
-              const Padding(
-                padding: EdgeInsets.all(10),
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              ElevatedButton(
-                onPressed: () async {
-                  if (codeCtrl.text.trim().isEmpty) return;
-                  setDialogState(() => isImporting = true);
-
-                  final data = await CategoryService().loadCategoryByCode(
-                    codeCtrl.text,
-                  );
-
-                  if (!ctx.mounted) return;
-
-                  if (data == null) {
-                    setDialogState(() => isImporting = false);
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Code not found. Double-check and try again.',
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: RetroPanel(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Import Category',
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
-                    );
-                    return;
-                  }
+                      RetroIconButton(
+                        tooltip: 'Close',
+                        icon: Icons.close_rounded,
+                        size: 44,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const RetroWindowBar(title: 'SHARE_CODE.EXE'),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Enter a share code to load another user\'s filters.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: codeCtrl,
+                    style: const TextStyle(
+                      color: auroraInk,
+                      letterSpacing: 3,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Share code',
+                      hintText: 'LF7-X2K',
+                      prefixIcon: Icon(Icons.download_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 154,
+                      child: isImporting
+                          ? const Center(
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            )
+                          : RetroButton(
+                              label: 'Import',
+                              icon: Icons.download_rounded,
+                              onPressed: () async {
+                                if (codeCtrl.text.trim().isEmpty) return;
+                                setDialogState(() => isImporting = true);
 
-                  // Apply loaded filters to the page
-                  setState(() {
-                    kidsMode = data['kidsMode'] ?? false;
-                    selectedDuration = data['duration'] ?? 'any';
-                    selectedVideoType = data['videoType'] ?? 'Any';
-                    avoidWordsCtrl.text = data['avoidWords'] ?? '';
-                    advancedDescriptionCtrl.text =
-                        data['advancedDescription'] ?? '';
-                    if ((data['keyword'] as String? ?? '').isNotEmpty) {
-                      keywordCtrl.text = data['keyword'];
-                    }
-                  });
+                                final data = await CategoryService()
+                                    .loadCategoryByCode(codeCtrl.text);
 
-                  Navigator.pop(ctx);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Loaded: ${data['name']}')),
-                  );
-                },
-                child: const Text('Import'),
+                                if (!ctx.mounted) return;
+
+                                if (data == null) {
+                                  setDialogState(() => isImporting = false);
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Code not found. Double-check and try again.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  kidsMode = data['kidsMode'] ?? false;
+                                  selectedDuration = data['duration'] ?? 'any';
+                                  selectedVideoType =
+                                      data['videoType'] ?? 'Any';
+                                  avoidWordsCtrl.text =
+                                      data['avoidWords'] ?? '';
+                                  advancedDescriptionCtrl.text =
+                                      data['advancedDescription'] ?? '';
+                                  final keyword =
+                                      data['keyword'] as String? ?? '';
+                                  if (keyword.isNotEmpty) {
+                                    keywordCtrl.text = keyword;
+                                  }
+                                });
+
+                                Navigator.pop(ctx);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Loaded: ${data['name']}'),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 
   Future<void> _searchVideo() async {
-    debugPrint(premadeCategory.toString());
-
     String keyword = keywordCtrl.text.trim();
-
     if (keyword.isEmpty) return;
-
-    debugPrint(keyword);
 
     setState(() {
       isLoading = true;
@@ -265,107 +283,139 @@ class _KeyWordPageState extends State<KeyWordPage> {
     }
   }
 
-  Widget _buildTunerPanel() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: auroraPanel,
-        border: Border.all(color: auroraDeep, width: 1.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCatalogHeader() {
+    return RetroPanel(
+      color: auroraYellow,
+      shadowOffset: const Offset(7, 7),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 12,
         children: [
-          const Text(
-            'CHANNEL CUSTOMIZER',
-            style: TextStyle(
-              color: auroraGlow,
-              fontSize: 12,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w700,
+          Text(
+            'Tape Shelf',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: auroraWhite,
+              shadows: const [Shadow(color: auroraInk, offset: Offset(2, 2))],
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tune into your own curated channel',
-            style: TextStyle(
-              color: auroraMint,
-              fontFamily: 'AuroraFont',
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              height: 1.15,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Search by mood, genre, topic, or vibe',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 18),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: keywordCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  onSubmitted: (_) => _searchVideo(),
-                  decoration: const InputDecoration(
-                    labelText: "Search Broadcast",
-                    hintText: "e.g. late night jazz, city pop, gaming live",
-                    prefixIcon: Icon(Icons.search),
-                  ),
+              SizedBox(
+                width: 152,
+                child: RetroButton(
+                  label: 'Import',
+                  icon: Icons.download_rounded,
+                  isPrimary: false,
+                  onPressed: _openImportDialog,
                 ),
               ),
-              const SizedBox(width: 12),
-              _buildSquareIconButton(
-                onTap: _openFilterDialog,
-                icon: Icons.tune,
-                color: auroraGlow,
-                tooltip: 'Filters',
-              ),
-              const SizedBox(width: 8),
-              _buildSquareIconButton(
-                onTap: _openImportDialog,
-                icon: Icons.download_rounded,
-                color: auroraMint,
-                tooltip: 'Import Category',
+              SizedBox(
+                width: 168,
+                child: RetroButton(
+                  label: 'Add a tape',
+                  icon: Icons.add_rounded,
+                  onPressed: _openFilterDialog,
+                ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildSearchConsole() {
+    return RetroPanel(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const RetroWindowBar(title: 'CHANNEL_TUNER.EXE'),
+          const SizedBox(height: 16),
+          Text(
+            'Tune into your own curated channel',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Search by mood, genre, topic, or vibe.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 680;
+              final searchField = TextField(
+                controller: keywordCtrl,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _searchVideo(),
+                decoration: const InputDecoration(
+                  labelText: 'Search tapes',
+                  hintText: 'late night jazz, city pop, gaming live',
+                  prefixIcon: Icon(Icons.search_rounded),
+                ),
+              );
+              final actions = Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: 138,
+                    child: RetroButton(
+                      label: 'Filters',
+                      icon: Icons.tune_rounded,
+                      isPrimary: false,
+                      onPressed: _openFilterDialog,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 152,
+                    child: RetroButton(
+                      label: isLoading ? 'Tuning' : 'Launch',
+                      icon: isLoading
+                          ? Icons.hourglass_top_rounded
+                          : Icons.play_circle_fill_rounded,
+                      onPressed: isLoading ? null : _searchVideo,
+                    ),
+                  ),
+                ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [searchField, const SizedBox(height: 14), actions],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: searchField),
+                  const SizedBox(width: 14),
+                  actions,
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 14),
-
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (kidsMode) _buildFilterChip('Kids Mode'),
+              if (kidsMode) _buildFilterChip('Kids mode'),
               if (selectedDuration != 'any') _buildFilterChip(selectedDuration),
               if (selectedVideoType != 'Any')
                 _buildFilterChip(selectedVideoType),
+              if (filterClickbait) _buildFilterChip('Clickbait filter'),
               if (avoidWordsCtrl.text.trim().isNotEmpty)
                 _buildFilterChip('Avoid: ${avoidWordsCtrl.text.trim()}'),
             ],
-          ),
-
-          const SizedBox(height: 18),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isLoading ? null : _searchVideo,
-              icon: isLoading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.play_circle_fill_rounded),
-              label: Text(isLoading ? 'Scanning Signal...' : 'Launch Channel'),
-            ),
           ),
         ],
       ),
@@ -376,79 +426,68 @@ class _KeyWordPageState extends State<KeyWordPage> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(0),
         onTap: _searchVideo,
-        splashColor: auroraGlow.withOpacity(0.1),
-        highlightColor: auroraGlow.withOpacity(0.04),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
-          decoration: BoxDecoration(
-            color: const Color(0xFF04131F),
-            border: Border.all(color: auroraDeep, width: 1.4),
-          ),
+        child: RetroPanel(
+          color: auroraBlue,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          shadowOffset: const Offset(7, 7),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // TOP LABEL ROW
-              Row(
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     'NOW AIRING',
                     style: TextStyle(
-                      color: auroraGlow,
-                      fontWeight: FontWeight.w700,
+                      color: auroraInk,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: 2,
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(width: 10),
-
-                  // LIVE TAG
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(4),
+                      color: auroraInk,
+                      border: Border.all(color: auroraWhite, width: 2),
                     ),
                     child: const Text(
                       'LIVE',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: auroraWhite,
                         fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: 1,
                       ),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 14),
-
-              // MAIN TITLE (BIG)
               Text(
                 keywordCtrl.text.trim().isEmpty
-                    ? 'No channel selected'
+                    ? 'No tape selected'
                     : keywordCtrl.text.trim(),
-                style: const TextStyle(
-                  color: auroraMint,
-                  fontFamily: 'AuroraFont',
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  height: 1.1,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: auroraWhite,
+                  shadows: const [
+                    Shadow(color: auroraInk, offset: Offset(2, 2)),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 10),
-
-              // SUBTEXT
-              const Text(
-                'Tap to relaunch this channel',
-                style: TextStyle(color: Colors.white60, fontSize: 14),
+              const SizedBox(height: 8),
+              Text(
+                videoTitle ?? 'Tap to relaunch this channel',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: auroraWhite,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -457,41 +496,20 @@ class _KeyWordPageState extends State<KeyWordPage> {
     );
   }
 
-  Widget _buildSquareIconButton({
-    required VoidCallback onTap,
-    required IconData icon,
-    required Color color,
-    required String tooltip,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A2538),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: auroraDeep, width: 1.2),
-      ),
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon),
-        color: color,
-        tooltip: tooltip,
-      ),
-    );
-  }
-
   Widget _buildFilterChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: auroraDeep,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: auroraBlueTeal, width: 1),
+        color: auroraGreen,
+        border: Border.all(color: auroraInk, width: 3),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: auroraMint,
+          color: auroraInk,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
         ),
       ),
     );
@@ -500,70 +518,40 @@ class _KeyWordPageState extends State<KeyWordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: const SizedBox(),
+      appBar: RetroAppBar(
+        title: 'Aurora Home',
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-              },
-              icon: const Icon(Icons.account_circle_outlined),
-            ),
+          RetroIconButton(
+            tooltip: 'Sign out',
+            icon: Icons.person_rounded,
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
           ),
         ],
       ),
-      body: Container(
-        width: double.infinity,
-        color: auroraNavy,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10, bottom: 20),
-                    child: SizedBox(
-                      height: 120,
-                      child: ClipRect(
-                        child: Align(
-                          alignment: Alignment.center,
-                          heightFactor: 0.5,
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-                if (videoTitle != null || videoUrl != null)
-                  _buildCurrentSelectionCard(),
-
-                const SizedBox(height: 18),
-
-                _buildTunerPanel(),
-
-                const SizedBox(height: 22),
-
-                FeaturedChannelsWidget(
-                  onChannelTap: (keyword) async {
-                    premadeCategory = true;
-                    keywordCtrl.text = keyword;
-                    await _searchVideo();
-                  },
-                ),
-
+      body: ResponsivePage(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCatalogHeader(),
+              const SizedBox(height: 22),
+              if (videoTitle != null || videoUrl != null) ...[
+                _buildCurrentSelectionCard(),
                 const SizedBox(height: 22),
               ],
-            ),
+              _buildSearchConsole(),
+              const SizedBox(height: 26),
+              FeaturedChannelsWidget(
+                onChannelTap: (keyword) async {
+                  premadeCategory = true;
+                  keywordCtrl.text = keyword;
+                  await _searchVideo();
+                },
+              ),
+              const SizedBox(height: 22),
+            ],
           ),
         ),
       ),
