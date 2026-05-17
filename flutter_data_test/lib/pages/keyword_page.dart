@@ -415,6 +415,8 @@ class _KeyWordPageState extends State<KeyWordPage> {
               if (filterClickbait) _buildFilterChip('Clickbait filter'),
               if (avoidWordsCtrl.text.trim().isNotEmpty)
                 _buildFilterChip('Avoid: ${avoidWordsCtrl.text.trim()}'),
+              if (advancedDescriptionCtrl.text.trim().isNotEmpty)
+                _buildFilterChip('Advanced search: ${advancedDescriptionCtrl.text.trim()}'),
             ],
           ),
         ],
