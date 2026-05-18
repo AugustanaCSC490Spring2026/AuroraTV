@@ -1,5 +1,7 @@
-enum DisplayMode { normal, retroTv }
+enum DisplayMode { normal, retroTv, nintendo, oldTelevision }
 
-const Map<DisplayMode, String> frameAssetMap = {
-  DisplayMode.retroTv: 'assets/images/retro_tv.png',
+const frameAssetMap = {
+  DisplayMode.retroTv:       'assets/images/retro_tv.png',
+  DisplayMode.nintendo:      'assets/images/nintendo.png',      // ← add
+  DisplayMode.oldTelevision: 'assets/images/old_television.png', // ← add
 };
