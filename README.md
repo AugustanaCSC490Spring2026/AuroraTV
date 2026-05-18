@@ -8,7 +8,7 @@ AuroraTV is designed to create a more intentional and seamless video-watching ex
 
 Once a category is selected, videos play automatically in succession, eliminating the need for manual interaction. This creates a more passive and immersive viewing experience, making AuroraTV especially well-suited for:
 
-Watching content in group or social settings without the stress of searching
-Having background entertainment while working or relaxing
-Reducing decision fatigue from endless scrolling
+Watching content in group or social settings without the stress of searching,
+Having background entertainment while working or relaxing,
+Reducing decision fatigue from endless scrolling,
 Getting users out of their default curated algorithm 
