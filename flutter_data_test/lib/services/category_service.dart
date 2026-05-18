@@ -30,6 +30,7 @@ class CategoryService {
     required bool kidsMode,
     required String duration,
     required String videoType,
+    required bool filterClickbait,
     required String avoidWords,
     required String advancedDescription,
   }) async {
@@ -43,6 +44,7 @@ class CategoryService {
       'kidsMode': kidsMode,
       'duration': duration,
       'videoType': videoType,
+      'filterClickbait': filterClickbait,
       'avoidWords': avoidWords,
       'advancedDescription': advancedDescription,
       'createdBy': uid,
