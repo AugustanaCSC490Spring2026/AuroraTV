@@ -16,3 +16,4 @@ const Color auroraDeep = auroraInk;
 const Color auroraNavy = Color(0xFFF8E7CF);
 const Color auroraPanel = auroraCream;
 const Color auroraGlow = auroraYellow;
+const Color auroraLogo = Color.fromARGB(255, 12, 99, 91);
