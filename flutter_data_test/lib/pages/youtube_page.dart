@@ -44,6 +44,8 @@ class _YoutubePageState extends State<YoutubePage> {
   bool isAccountMenuOpen = false;
   bool isFindingNext = false;
   DisplayMode selectedMode = DisplayMode.normal;
+  late Widget _playerWidget;
+  final _playerKey = GlobalKey();
 
   final channels = const [
     {
@@ -109,6 +111,23 @@ class _YoutubePageState extends State<YoutubePage> {
         }
         setState(() {});
       });
+    }
+
+    if (kIsWeb) {
+      _playerWidget = ypi.YoutubePlayer(
+        key: _playerKey,
+        controller: webController,
+        aspectRatio: 16 / 9,
+      );
+    } else {
+      _playerWidget = ypf.YoutubePlayerBuilder(
+        key: _playerKey,
+        player: ypf.YoutubePlayer(
+          controller: mobileController,
+          showVideoProgressIndicator: true,
+        ),
+        builder: (context, player) => player,
+      );
     }
   }
 
@@ -263,6 +282,11 @@ class _YoutubePageState extends State<YoutubePage> {
     super.dispose();
   }
 
+  bool get _isFrameActive =>
+      selectedMode == DisplayMode.retroTv ||
+      selectedMode == DisplayMode.nintendo ||
+      selectedMode == DisplayMode.oldTelevision;
+
   Widget buildVideoPlayer(Widget player) {
     return Center(
       child: ConstrainedBox(
@@ -270,9 +294,9 @@ class _YoutubePageState extends State<YoutubePage> {
         child: AspectRatio(
           aspectRatio: 16 / 9,
           child: RetroPanel(
-            padding: const EdgeInsets.all(18),
-            shadowOffset: const Offset(10, 10),
-            borderWidth: 5,
+            padding: _isFrameActive ? EdgeInsets.zero : const EdgeInsets.all(18),
+            shadowOffset: _isFrameActive ? Offset.zero : const Offset(10, 10),
+            borderWidth: _isFrameActive ? 0 : 5,
             child: Row(
               children: [
                 Expanded(child: _buildScreen(player)),
@@ -288,15 +312,18 @@ class _YoutubePageState extends State<YoutubePage> {
 
   Widget _buildScreen(Widget player) {
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: auroraInk, width: 4),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [auroraBlue, auroraYellow, auroraGreen],
-        ),
-      ),
+      decoration: _isFrameActive
+          ? null
+          : BoxDecoration(
+              border: Border.all(color: auroraInk, width: 4),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [auroraBlue, auroraYellow, auroraGreen],
+              ),
+            ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(child: ClipRect(child: player)),
           const Positioned.fill(
@@ -320,14 +347,19 @@ class _YoutubePageState extends State<YoutubePage> {
               ),
             ),
           ),
-          if (selectedMode == DisplayMode.retroTv)
-            Positioned.fill(
+          Positioned(
+              top: -18,
+              left: -13,
+              right: -17,
+              bottom: -35,
               child: IgnorePointer(
-                child: Image.asset(
-                  frameAssetMap[DisplayMode.retroTv]!,
-                  fit: BoxFit.fill,
-                  filterQuality: FilterQuality.high,
-                ),
+                child: _isFrameActive
+                    ? Image.asset(
+                        frameAssetMap[selectedMode]!,
+                        fit: BoxFit.fill,
+                        filterQuality: FilterQuality.high,
+                      )
+                    : const SizedBox.shrink(),
               ),
             ),
         ],
@@ -442,6 +474,28 @@ class _YoutubePageState extends State<YoutubePage> {
               });
             },
           ),
+          _DisplayChoice(
+            title: 'Nintendo',
+            value: DisplayMode.nintendo,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                selectedMode = value;
+              });
+            },
+          ),
+          _DisplayChoice(
+            title: 'Old Television',
+            value: DisplayMode.oldTelevision,
+            groupValue: selectedMode,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                selectedMode = value;
+              });
+            },
+          ),
         ],
       ),
     );
@@ -513,23 +567,6 @@ class _YoutubePageState extends State<YoutubePage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget player;
-
-    if (kIsWeb) {
-      player = ypi.YoutubePlayer(
-        controller: webController,
-        aspectRatio: 16 / 9,
-      );
-    } else {
-      player = ypf.YoutubePlayerBuilder(
-        player: ypf.YoutubePlayer(
-          controller: mobileController,
-          showVideoProgressIndicator: true,
-        ),
-        builder: (context, player) => player,
-      );
-    }
-
     return Scaffold(
       key: _scaffoldKey,
       appBar: RetroAppBar(
@@ -592,7 +629,7 @@ class _YoutubePageState extends State<YoutubePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  buildVideoPlayer(player),
+                  buildVideoPlayer(_playerWidget),
                   const SizedBox(height: 28),
                   _buildNowPlayingPanel(),
                   const SizedBox(height: 22),
