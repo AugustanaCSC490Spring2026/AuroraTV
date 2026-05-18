@@ -18,3 +18,8 @@ Getting users out of their default curated algorithm
 AuroraTV shifts the focus from active searching to passive discovery. Instead of relying on complex recommendation algorithms that require constant engagement, users directly control the type of content they want through category selection. The platform then handles the rest, delivering a smooth, uninterrupted stream of videos
 
 <img width="955" height="537" alt="image" src="https://github.com/user-attachments/assets/73c7d0f2-5118-452d-a895-b11aae04e1cc" />
+
+
+
+Front Page
+<img width="927" height="895" alt="image" src="https://github.com/user-attachments/assets/df942999-0b24-4720-91c1-9394d2a2fa3a" />
