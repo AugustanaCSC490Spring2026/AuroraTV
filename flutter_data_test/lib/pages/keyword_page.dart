@@ -19,6 +19,14 @@ class KeyWordPage extends StatefulWidget {
 }
 
 class _KeyWordPageState extends State<KeyWordPage> {
+  static const _sharedTapeColors = [
+    auroraYellow,
+    auroraGreen,
+    auroraBlue,
+    auroraCream,
+    auroraInk,
+  ];
+
   final TextEditingController keywordCtrl = TextEditingController();
   String? videoTitle;
   String? videoUrl;
@@ -36,6 +44,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
 
   final _videoService = VideoService();
   final _geminiService = GeminiService();
+  final List<_SharedCategoryTape> _addedTapes = [];
 
   @override
   void dispose() {
@@ -43,6 +52,87 @@ class _KeyWordPageState extends State<KeyWordPage> {
     avoidWordsCtrl.dispose();
     advancedDescriptionCtrl.dispose();
     super.dispose();
+  }
+
+  String _normalizeShareCode(String code) {
+    final stripped = code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    if (stripped.isEmpty) return '';
+    if (stripped.length == 6) {
+      return '${stripped.substring(0, 3)}-${stripped.substring(3)}';
+    }
+    return code.toUpperCase().trim();
+  }
+
+  String _readCategoryText(
+    Map<String, dynamic> data,
+    String key, [
+    String fallback = '',
+  ]) {
+    final value = data[key];
+    if (value is! String) return fallback;
+
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? fallback : trimmed;
+  }
+
+  bool _readCategoryBool(Map<String, dynamic> data, String key, bool fallback) {
+    final value = data[key];
+    return value is bool ? value : fallback;
+  }
+
+  int _shareCodeSeed(String shareCode) {
+    return shareCode.codeUnits.fold<int>(
+      0,
+      (seed, unit) => (seed * 31 + unit) & 0x7fffffff,
+    );
+  }
+
+  _SharedCategoryTape? _buildSharedCategoryTape(
+    String shareCode,
+    Map<String, dynamic> data,
+  ) {
+    final keyword = _readCategoryText(data, 'keyword');
+    if (keyword.isEmpty) return null;
+
+    final title = _readCategoryText(data, 'name', keyword);
+    final seed = _shareCodeSeed(shareCode);
+
+    return _SharedCategoryTape(
+      shareCode: shareCode,
+      title: title,
+      keyword: keyword,
+      color: _sharedTapeColors[seed % _sharedTapeColors.length],
+      height: 156 + (seed % 5) * 8,
+      width: 48 + (seed % 4) * 4,
+      kidsMode: _readCategoryBool(data, 'kidsMode', false),
+      selectedDuration: _readCategoryText(data, 'duration', 'any'),
+      selectedVideoType: _readCategoryText(data, 'videoType', 'Any'),
+      filterClickbait: _readCategoryBool(data, 'filterClickbait', true),
+      avoidWords: _readCategoryText(data, 'avoidWords'),
+      advancedDescription: _readCategoryText(data, 'advancedDescription'),
+    );
+  }
+
+  Future<void> _startWatchingTape(TapeData tape) async {
+    if (tape is _SharedCategoryTape) {
+      setState(() {
+        kidsMode = tape.kidsMode;
+        selectedDuration = tape.selectedDuration;
+        selectedVideoType = tape.selectedVideoType;
+        filterClickbait = tape.filterClickbait;
+        avoidWordsCtrl.text = tape.avoidWords;
+        advancedDescriptionCtrl.text = tape.advancedDescription;
+        premadeCategory = true;
+        keywordCtrl.text = tape.keyword;
+      });
+    } else {
+      setState(() {
+        premadeCategory = true;
+        keywordCtrl.text = tape.keyword;
+      });
+    }
+
+    await _searchVideo();
   }
 
   void _openFilterDialog() {
@@ -76,11 +166,156 @@ class _KeyWordPageState extends State<KeyWordPage> {
     );
   }
 
+  void _openAddTapeDialog() {
+    final codeCtrl = TextEditingController();
+    bool isAdding = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Future<void> addTape() async {
+            final shareCode = _normalizeShareCode(codeCtrl.text);
+            if (shareCode.isEmpty || isAdding) return;
+
+            setDialogState(() => isAdding = true);
+
+            Map<String, dynamic>? data;
+            try {
+              data = await CategoryService().loadCategoryByCode(shareCode);
+            } catch (error) {
+              if (!ctx.mounted) return;
+              setDialogState(() => isAdding = false);
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                SnackBar(content: Text('Failed to add tape: $error')),
+              );
+              return;
+            }
+
+            if (!ctx.mounted) return;
+
+            if (data == null) {
+              setDialogState(() => isAdding = false);
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(
+                  content: Text('Code not found. Double-check and try again.'),
+                ),
+              );
+              return;
+            }
+
+            final tape = _buildSharedCategoryTape(shareCode, data);
+            if (tape == null) {
+              setDialogState(() => isAdding = false);
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                const SnackBar(
+                  content: Text('That code does not include a playable tape.'),
+                ),
+              );
+              return;
+            }
+
+            if (!mounted) return;
+            setState(() {
+              _addedTapes.removeWhere(
+                (addedTape) => addedTape.shareCode == tape.shareCode,
+              );
+              _addedTapes.insert(0, tape);
+            });
+
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Added ${tape.title} to Start Watching.')),
+            );
+          }
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: RetroPanel(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Add Tape',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                        ),
+                        RetroIconButton(
+                          tooltip: 'Close',
+                          icon: Icons.close_rounded,
+                          size: 44,
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const RetroWindowBar(title: 'ADD_TAPE.EXE'),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Enter a share code to add it to Start Watching.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: codeCtrl,
+                      style: const TextStyle(
+                        color: auroraInk,
+                        letterSpacing: 3,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      textCapitalization: TextCapitalization.characters,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => addTape(),
+                      decoration: const InputDecoration(
+                        labelText: 'Share code',
+                        hintText: 'LF7-X2K',
+                        prefixIcon: Icon(Icons.add_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 154,
+                        child: isAdding
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : RetroButton(
+                                label: 'Add tape',
+                                icon: Icons.add_rounded,
+                                onPressed: addTape,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(codeCtrl.dispose);
+  }
+
   void _openImportDialog() {
     final codeCtrl = TextEditingController();
     bool isImporting = false;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => Dialog(
@@ -148,11 +383,26 @@ class _KeyWordPageState extends State<KeyWordPage> {
                               label: 'Import',
                               icon: Icons.download_rounded,
                               onPressed: () async {
-                                if (codeCtrl.text.trim().isEmpty) return;
+                                final shareCode = _normalizeShareCode(
+                                  codeCtrl.text,
+                                );
+                                if (shareCode.isEmpty) return;
                                 setDialogState(() => isImporting = true);
 
-                                final data = await CategoryService()
-                                    .loadCategoryByCode(codeCtrl.text);
+                                Map<String, dynamic>? data;
+                                try {
+                                  data = await CategoryService()
+                                      .loadCategoryByCode(shareCode);
+                                } catch (error) {
+                                  if (!ctx.mounted) return;
+                                  setDialogState(() => isImporting = false);
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to import: $error'),
+                                    ),
+                                  );
+                                  return;
+                                }
 
                                 if (!ctx.mounted) return;
 
@@ -168,27 +418,52 @@ class _KeyWordPageState extends State<KeyWordPage> {
                                   return;
                                 }
 
+                                if (!mounted) return;
                                 setState(() {
-                                  kidsMode = data['kidsMode'] ?? false;
-                                  selectedDuration = data['duration'] ?? 'any';
-                                  selectedVideoType =
-                                      data['videoType'] ?? 'Any';
-                                  avoidWordsCtrl.text =
-                                      data['avoidWords'] ?? '';
+                                  kidsMode = _readCategoryBool(
+                                    data!,
+                                    'kidsMode',
+                                    false,
+                                  );
+                                  selectedDuration = _readCategoryText(
+                                    data,
+                                    'duration',
+                                    'any',
+                                  );
+                                  selectedVideoType = _readCategoryText(
+                                    data,
+                                    'videoType',
+                                    'Any',
+                                  );
+                                  filterClickbait = _readCategoryBool(
+                                    data,
+                                    'filterClickbait',
+                                    true,
+                                  );
+                                  avoidWordsCtrl.text = _readCategoryText(
+                                    data,
+                                    'avoidWords',
+                                  );
                                   advancedDescriptionCtrl.text =
-                                      data['advancedDescription'] ?? '';
-                                  final keyword =
-                                      data['keyword'] as String? ?? '';
+                                      _readCategoryText(
+                                        data,
+                                        'advancedDescription',
+                                      );
+                                  final keyword = _readCategoryText(
+                                    data,
+                                    'keyword',
+                                  );
                                   if (keyword.isNotEmpty) {
                                     keywordCtrl.text = keyword;
                                   }
                                 });
 
                                 Navigator.pop(ctx);
-                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Loaded: ${data['name']}'),
+                                    content: Text(
+                                      'Loaded: ${_readCategoryText(data, 'name', 'Shared category')}',
+                                    ),
                                   ),
                                 );
                               },
@@ -201,7 +476,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
           ),
         ),
       ),
-    );
+    ).whenComplete(codeCtrl.dispose);
   }
 
   Future<void> _searchVideo() async {
@@ -317,7 +592,7 @@ class _KeyWordPageState extends State<KeyWordPage> {
                 child: RetroButton(
                   label: 'Add a tape',
                   icon: Icons.add_rounded,
-                  onPressed: _openFilterDialog,
+                  onPressed: _openAddTapeDialog,
                 ),
               ),
             ],
@@ -416,7 +691,9 @@ class _KeyWordPageState extends State<KeyWordPage> {
               if (avoidWordsCtrl.text.trim().isNotEmpty)
                 _buildFilterChip('Avoid: ${avoidWordsCtrl.text.trim()}'),
               if (advancedDescriptionCtrl.text.trim().isNotEmpty)
-                _buildFilterChip('Advanced search: ${advancedDescriptionCtrl.text.trim()}'),
+                _buildFilterChip(
+                  'Advanced search: ${advancedDescriptionCtrl.text.trim()}',
+                ),
             ],
           ),
         ],
@@ -546,11 +823,8 @@ class _KeyWordPageState extends State<KeyWordPage> {
               _buildSearchConsole(),
               const SizedBox(height: 26),
               FeaturedChannelsWidget(
-                onChannelTap: (keyword) async {
-                  premadeCategory = true;
-                  keywordCtrl.text = keyword;
-                  await _searchVideo();
-                },
+                addedTapes: _addedTapes,
+                onTapePressed: _startWatchingTape,
               ),
               const SizedBox(height: 22),
             ],
@@ -559,4 +833,29 @@ class _KeyWordPageState extends State<KeyWordPage> {
       ),
     );
   }
+}
+
+class _SharedCategoryTape extends TapeData {
+  const _SharedCategoryTape({
+    required this.shareCode,
+    required this.kidsMode,
+    required this.selectedDuration,
+    required this.selectedVideoType,
+    required this.filterClickbait,
+    required this.avoidWords,
+    required this.advancedDescription,
+    required super.title,
+    required super.keyword,
+    required super.color,
+    super.height = 176,
+    super.width = 58,
+  });
+
+  final String shareCode;
+  final bool kidsMode;
+  final String selectedDuration;
+  final String selectedVideoType;
+  final bool filterClickbait;
+  final String avoidWords;
+  final String advancedDescription;
 }

@@ -69,6 +69,7 @@ class _FilterDialogWidgetState extends State<FilterDialogWidget> {
         kidsMode: _kidsMode,
         duration: _selectedDuration,
         videoType: _selectedVideoType,
+        filterClickbait: _filterClickbait,
         avoidWords: widget.avoidWordsCtrl.text.trim(),
         advancedDescription: widget.advancedDescriptionCtrl.text.trim(),
       );

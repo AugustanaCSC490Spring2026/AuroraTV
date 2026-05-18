@@ -4,7 +4,8 @@ import '../constants/colors.dart';
 import 'retro_ui.dart';
 
 class FeaturedChannelsWidget extends StatelessWidget {
-  final ValueChanged<String> onChannelTap;
+  final List<TapeData> addedTapes;
+  final ValueChanged<TapeData> onTapePressed;
 
   static const _channels = [
     TapeData(
@@ -65,7 +66,11 @@ class FeaturedChannelsWidget extends StatelessWidget {
     ),
   ];
 
-  const FeaturedChannelsWidget({super.key, required this.onChannelTap});
+  const FeaturedChannelsWidget({
+    super.key,
+    this.addedTapes = const [],
+    required this.onTapePressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +82,8 @@ class FeaturedChannelsWidget extends StatelessWidget {
         Text('Start Watching', style: text.headlineMedium),
         const SizedBox(height: 12),
         TapeShelf(
-          tapes: _channels,
-          onTapePressed: (tape) => onChannelTap(tape.keyword),
+          tapes: [...addedTapes, ..._channels],
+          onTapePressed: onTapePressed,
         ),
       ],
     );
